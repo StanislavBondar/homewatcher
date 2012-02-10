@@ -19,6 +19,11 @@ import com.donn.envisalink.communication.PanelException;
 import com.donn.envisalink.tpi.SecurityPanel;
 import com.donn.envisalink.tpi.TpiMessage;
 
+/**
+ * Main Activity - launches on load
+ * @author Donn
+ *
+ */
 public class HomeWatcherActivity extends Activity {
 
 	private Button signInButton;
