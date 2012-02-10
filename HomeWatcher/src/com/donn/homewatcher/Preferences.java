@@ -10,6 +10,16 @@ import android.preference.PreferenceScreen;
 
 public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 	
+	public static final String DEFAULT_PASSWORD = "123456";
+	public static final String DEFAULT_TIMEOUT = "10000";
+	public static final String DEFAULT_PORT_NUMBER = "4025";
+	public static final String DEFAULT_SERVER_VALUE = "192.168.0.100";
+	public static final String ZONE_PREFIX = "z";
+	public static final String SERVER = "server";
+	public static final String PORT = "port";
+	public static final String TIMEOUT = "timeout";
+	public static final String PASSWORD = "password";
+
 	public static String PREF_FILE = "com.donn.homewatcher_preferences";
 	
 	private PreferenceScreen mainPreferenceScreen;
@@ -46,18 +56,18 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		
 		serverName = new EditTextPreference(this);
 		serverName.setTitle("Server Name");
-		serverName.setDefaultValue("192.168.0.100");
-		serverName.setKey("server");
+		serverName.setDefaultValue(DEFAULT_SERVER_VALUE);
+		serverName.setKey(SERVER);
 		
 		serverPort = new EditTextPreference(this);
 		serverPort.setTitle("Server Port");
-		serverPort.setDefaultValue("4025");
-		serverPort.setKey("port");
+		serverPort.setDefaultValue(DEFAULT_PORT_NUMBER);
+		serverPort.setKey(PORT);
 
 		serverTimeout = new EditTextPreference(this);
 		serverTimeout.setTitle("Connection timeout (ms)");
-		serverTimeout.setDefaultValue("10000");
-		serverTimeout.setKey("timeout");
+		serverTimeout.setDefaultValue(DEFAULT_TIMEOUT);
+		serverTimeout.setKey(TIMEOUT);
 		
 		serverCategory.addPreference(serverName);
 		serverCategory.addPreference(serverPort);
@@ -65,8 +75,8 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		
 		signInPassword = new EditTextPreference(this);
 		signInPassword.setTitle("Server password (1-6) chars)");
-		signInPassword.setDefaultValue("123456");
-		signInPassword.setKey("password");
+		signInPassword.setDefaultValue(DEFAULT_PASSWORD);
+		signInPassword.setKey(PASSWORD);
 
 		signInCategory.addPreference(signInPassword);
 		
@@ -81,7 +91,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 				zonePreferences[zoneCount] = zonePreference;
 				zonePreference.setDefaultValue("No Zone Name Defined");
 				String zoneNumber = Integer.toString(zoneCount);
-				String zoneKey = "z" + zoneNumber;
+				String zoneKey = ZONE_PREFIX + zoneNumber;
 				zonePreference.setKey(zoneKey);
 				zonePreference.setTitle("Zone " + zoneNumber);
 				
@@ -119,20 +129,20 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 	
-		if (key.startsWith("z")) {
+		if (key.startsWith(ZONE_PREFIX)) {
 			int preferenceIndex = Integer.parseInt(key.substring(1));
 			zonePreferences[preferenceIndex].setSummary(sharedPreferences.getString(key, ""));
 		}
-		else if (key.equalsIgnoreCase("server")) {
+		else if (key.equalsIgnoreCase(SERVER)) {
 			serverName.setSummary(sharedPreferences.getString(key, ""));
 		}
-		else if (key.equalsIgnoreCase("port")) {
+		else if (key.equalsIgnoreCase(PORT)) {
 			serverPort.setSummary(sharedPreferences.getString(key, ""));
 		}
-		else if (key.equalsIgnoreCase("timeout")) {
+		else if (key.equalsIgnoreCase(TIMEOUT)) {
 			serverTimeout.setSummary(sharedPreferences.getString(key, ""));
 		}
-		else if (key.equalsIgnoreCase("password")) {
+		else if (key.equalsIgnoreCase(PASSWORD)) {
 			signInPassword.setSummary(sharedPreferences.getString(key, ""));
 		}
 	}

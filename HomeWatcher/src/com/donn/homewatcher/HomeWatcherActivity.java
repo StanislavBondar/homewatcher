@@ -66,7 +66,6 @@ public class HomeWatcherActivity extends Activity {
 		try {
 			panel.close();
 		} catch (PanelException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -114,7 +113,6 @@ public class HomeWatcherActivity extends Activity {
 	
 	@Override
 	protected void onResume() {
-		// TODO Auto-generated method stub
 		super.onResume();
 		setButtons();
 	}
@@ -122,7 +120,6 @@ public class HomeWatcherActivity extends Activity {
 
 
 	private void setButtons() {
-		//TODO: This is not working as expected.
 		if (!signedIn && preferencesSet) {
 			signInButton.setEnabled(true);
 		}
@@ -149,7 +146,6 @@ public class HomeWatcherActivity extends Activity {
 				try {
 					panel.close();
 				} catch (PanelException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -197,13 +193,12 @@ public class HomeWatcherActivity extends Activity {
 
 		public void onClick(View v) {
 			try {
-				String server = sharedPrefs.getString("server", "");
-				int port = Integer.parseInt(sharedPrefs.getString("port", ""));
-				int timeout = Integer.parseInt(sharedPrefs.getString("timeout", ""));
-				String password = sharedPrefs.getString("password", "");
+				String server = sharedPrefs.getString(Preferences.SERVER, "");
+				int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, ""));
+				int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, ""));
+				String password = sharedPrefs.getString(Preferences.PASSWORD, "");
 				
 				log("Panel was opened? " + panel.open(server, port, timeout));
-				//TODO: Pass in value from preferences
 				log(panel.networkLogin(password));
 				outputReader = new OutputReader();
 				outputReader.execute();

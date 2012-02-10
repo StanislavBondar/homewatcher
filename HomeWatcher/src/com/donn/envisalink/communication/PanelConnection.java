@@ -47,7 +47,6 @@ public class PanelConnection {
 		}
 	}
 	
-	//TODO: pass these values in from properties
 	boolean open(String server, int port, int timeout) throws PanelException {
 		try {
 			socket = new Socket();
