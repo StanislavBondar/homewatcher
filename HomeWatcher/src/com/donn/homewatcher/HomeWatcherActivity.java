@@ -22,7 +22,7 @@ import com.donn.envisalink.tpi.TpiMessage;
 public class HomeWatcherActivity extends Activity {
 
 	private Button signInButton;
-	private Button signOutButton;
+	private Button signOutButton; 
 	private Button runCommandButton;
 	private Button preferencesButton; 
 	private EditText editText;
