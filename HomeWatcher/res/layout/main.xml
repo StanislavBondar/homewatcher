@@ -22,12 +22,6 @@
             android:layout_height="fill_parent"
             android:text="Sign Out" />
 
-        <Button
-            android:id="@+id/prefbutton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Preferences" />
-
     </LinearLayout>
 
     <Button

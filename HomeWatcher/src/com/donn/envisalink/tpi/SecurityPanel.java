@@ -20,7 +20,7 @@ public class SecurityPanel {
 			return panelSession.read();
 		}
 		catch (Exception e) {
-			throw new PanelException(e, "Error in SecurityPanel.continuousread()");
+			throw new PanelException(e, "Panel read method aborted.");
 		}
 	}
 	

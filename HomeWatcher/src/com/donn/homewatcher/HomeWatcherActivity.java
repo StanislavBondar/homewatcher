@@ -8,6 +8,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
@@ -29,13 +32,13 @@ public class HomeWatcherActivity extends Activity {
 	private Button signInButton;
 	private Button signOutButton; 
 	private Button runCommandButton;
-	private Button preferencesButton; 
+
 	private EditText editText;
 	
 	private ListView listView;
 	private ArrayAdapter<String> arrayAdapter;
 	
-	private OutputReader outputReader = null;
+	private PanelConnectionThread panelConnectionThread = null;
 	
 	private boolean signedIn = false;
 	private boolean preferencesSet = false;
@@ -60,16 +63,6 @@ public class HomeWatcherActivity extends Activity {
 		}
 	};
 	
-	protected void onDestroy() {
-		super.onDestroy();
-		
-		try {
-			panel.close();
-		} catch (PanelException e) {
-			e.printStackTrace();
-		}
-	}
-
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
@@ -91,9 +84,6 @@ public class HomeWatcherActivity extends Activity {
 		runCommandButton = (Button) this.findViewById(R.id.button2);
 		runCommandButton.setOnClickListener(new RunCommandButtonListener());
 		
-		preferencesButton = (Button) this.findViewById(R.id.prefbutton);
-		preferencesButton.setOnClickListener(new PreferencesButtonListener());
-		
 		editText = (EditText) this.findViewById(R.id.editText1);
 		
 		listView = (ListView) this.findViewById(R.id.listView1);
@@ -109,7 +99,43 @@ public class HomeWatcherActivity extends Activity {
 		log("Or... if first time running app, set preferences first.");
 	}
 	
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.actions, menu);
+		super.onCreateOptionsMenu(menu);
+		return true;
+	}	
 	
+    protected void onDestroy() {
+		super.onDestroy();
+		
+		try {
+			panel.close();
+		} catch (PanelException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	if (item.getItemId() == R.id.action_preferences) {
+    		try {
+				Intent i = new Intent(HomeWatcherActivity.this, Preferences.class);
+				startActivity(i);
+				preferencesSet = true;
+				setButtons();
+			} catch (Exception e) {
+				log(e.getMessage());
+				e.printStackTrace();
+			}
+    	}
+        return true;
+    }
 	
 	@Override
 	protected void onResume() {
@@ -158,56 +184,58 @@ public class HomeWatcherActivity extends Activity {
 		log(tpiMessage.toString());
 	}
 
-	private class OutputReader extends AsyncTask<Void, Void, Void> {
+	private class PanelConnectionThread extends AsyncTask<Void, Void, Void> {
 
-		protected Void doInBackground(Void... args) {
+		private SignonDetails signonDetails;
+		
+		public PanelConnectionThread(SignonDetails signonDetails) {
+			this.signonDetails = signonDetails;
+		}
+		
+		protected Void doInBackground(Void...args) {
 			
-			log("Starting Reader Client...");
-
 			boolean run = true;
 			String line = "";
-
-			log("Continuous read starting...");
-
-			while (run) {
-				try {
-					line = panel.read();
-					if (line != null) {
-						System.out.println(line);
-						processServerMessage(line);
-					}
-				} 
-				catch (PanelException e) {
-					log(e.getMessage());
-					e.printStackTrace();
-					break;
-				}
-			}
-			log("Ending Reader Client...");
 			
+			log("Login/Socket Read Starting...");
+
+			try {
+				log("Panel was opened? " + panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()));
+				log(panel.networkLogin(signonDetails.getPassword()));
+				
+				while (run) {
+					
+						line = panel.read();
+						if (line != null) {
+							System.out.println(line);
+							processServerMessage(line);
+						}
+				}
+				log("Login/Socket Read Ending...");
+			}
+			catch (PanelException e) {
+				log(e.getMessage());
+				e.printStackTrace();
+			}
+
 			return null;
 		}
+
 	}
 	
 	private class SignInButtonListener implements OnClickListener {
 
 		public void onClick(View v) {
-			try {
-				String server = sharedPrefs.getString(Preferences.SERVER, "");
-				int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, ""));
-				int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, ""));
-				String password = sharedPrefs.getString(Preferences.PASSWORD, "");
-				
-				log("Panel was opened? " + panel.open(server, port, timeout));
-				log(panel.networkLogin(password));
-				outputReader = new OutputReader();
-				outputReader.execute();
-				setButtons();
-			} 
-			catch (PanelException e) {
-				log(e.getMessage());
-				e.printStackTrace();
-			}
+			String server = sharedPrefs.getString(Preferences.SERVER, "");
+			int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, ""));
+			int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, ""));
+			String password = sharedPrefs.getString(Preferences.PASSWORD, "");
+
+			SignonDetails signonDetails = new SignonDetails(server, port, timeout, password);
+			
+			panelConnectionThread = new PanelConnectionThread(signonDetails);
+			panelConnectionThread.execute();
+			setButtons();
 		}
 	}
 	
@@ -218,7 +246,7 @@ public class HomeWatcherActivity extends Activity {
 				log("Panel was closed? " + panel.close());
 				signedIn = false;
 				setButtons();
-				outputReader.cancel(true);
+				panelConnectionThread.cancel(true);
 			} 
 			catch (PanelException e) {
 				log(e.getMessage());
@@ -240,19 +268,5 @@ public class HomeWatcherActivity extends Activity {
 			}
 		}
 	}
-	
-	private class PreferencesButtonListener implements OnClickListener {
 
-		public void onClick(View v) {
-			try {
-				Intent i = new Intent(HomeWatcherActivity.this, Preferences.class);
-				startActivity(i);
-				preferencesSet = true;
-				setButtons();
-			} catch (Exception e) {
-				log(e.getMessage());
-				e.printStackTrace();
-			}
-		}
-	}
 }
