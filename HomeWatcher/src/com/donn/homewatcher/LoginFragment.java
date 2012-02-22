@@ -24,14 +24,6 @@ public class LoginFragment extends Fragment {
 	
 	private ActivityLog logListener;
 	
-	public LoginFragment(SharedPreferences sharedPrefs) {
-		this.sharedPrefs = sharedPrefs;
-	}
-	
-	public LoginFragment() {
-		
-	}
-	
     /**
      * When creating, retrieve this instance's number from its arguments.
      */
@@ -45,6 +37,7 @@ public class LoginFragment extends Fragment {
         super.onAttach(activity);
         try {
             logListener = (ActivityLog) activity;
+            sharedPrefs = activity.getSharedPreferences(Preferences.PREF_FILE, Preferences.MODE_PRIVATE);
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
         }
@@ -71,7 +64,7 @@ public class LoginFragment extends Fragment {
 		TpiMessage tpiMessage = new TpiMessage(serverMessage, sharedPrefs);
 		if (tpiMessage.getCode() == 505) {
 			if (tpiMessage.getGeneralData().equals("0")) {
-				logListener.onActivityLogged("Login Failed... invalid credentials.");
+				logListener.logActivity("Login Failed... invalid credentials.");
 				//TODO: Figure Out
 				//signedIn = false;
 
@@ -82,13 +75,13 @@ public class LoginFragment extends Fragment {
 				}
 			}
 			else if (tpiMessage.getGeneralData().equals("1")) {
-				logListener.onActivityLogged("Login Successful, may now run commands.");
+				logListener.logActivity("Login Successful, may now run commands.");
 				//TODO: Figure out
 				//signedIn = true;
 			}
 		}
 		
-		logListener.onActivityLogged(tpiMessage.toString());
+		logListener.logActivity(tpiMessage.toString());
 	}
     
 	private class SignInButtonListener implements OnClickListener {
@@ -113,7 +106,7 @@ public class LoginFragment extends Fragment {
 
 		public void onClick(View v) {
 			try {
-				logListener.onActivityLogged("Panel was closed? " + SecurityPanel.getSecurityPanel().close());
+				logListener.logActivity("Panel was closed? " + SecurityPanel.getSecurityPanel().close());
 			} catch (PanelException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -140,11 +133,11 @@ public class LoginFragment extends Fragment {
 			boolean run = true;
 			String line = "";
 			
-			logListener.onActivityLogged("Login/Socket Read Starting...");
+			logListener.logActivity("Login/Socket Read Starting...");
 
 			try {
-				logListener.onActivityLogged("Panel was opened? " + panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()));
-				logListener.onActivityLogged(panel.networkLogin(signonDetails.getPassword()));
+				logListener.logActivity("Panel was opened? " + panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()));
+				logListener.logActivity(panel.networkLogin(signonDetails.getPassword()));
 				
 				while (run) {
 					
@@ -154,10 +147,10 @@ public class LoginFragment extends Fragment {
 							processServerMessage(line);
 						}
 				}
-				logListener.onActivityLogged("Login/Socket Read Ending...");
+				logListener.logActivity("Login/Socket Read Ending...");
 			}
 			catch (PanelException e) {
-				logListener.onActivityLogged(e.getMessage());
+				logListener.logActivity(e.getMessage());
 				e.printStackTrace();
 			}
 

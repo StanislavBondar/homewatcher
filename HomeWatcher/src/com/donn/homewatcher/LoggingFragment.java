@@ -1,7 +1,5 @@
 package com.donn.homewatcher;
 
-import java.util.Random;
-
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.SupportActivity;
@@ -19,19 +17,19 @@ public class LoggingFragment extends ListFragment {
 		
 		if (stringAdapter == null || stringAdapter.isEmpty()) {
 			stringAdapter = new ArrayAdapter<String>(getActivity(), R.layout.listline);
-			Random random = new Random();
-			for (int i = 0; i < 10; i++) {
-				String randomIntString = Integer.toString(random.nextInt() % 10);
-				stringAdapter.add(randomIntString);
-			}
+			setListAdapter(stringAdapter);
 		}
-		setListAdapter(stringAdapter);
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
 		return super.onCreateView(inflater, container, savedInstanceState);
+	}
+	
+	public void addMessageToLog(String messageString) {
+		stringAdapter.add(messageString);
+		setListAdapter(stringAdapter);
 	}
 
 	@Override
