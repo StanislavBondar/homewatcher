@@ -1,51 +1,50 @@
 package com.donn.homewatcher;
 
-import android.app.Activity;
+import java.util.HashMap;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.ActionBar;
+import android.support.v4.app.ActionBar.Tab;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.Menu;
+import android.support.v4.view.MenuItem;
 import android.util.Log;
-import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
 
 import com.donn.envisalink.communication.PanelException;
 import com.donn.envisalink.tpi.SecurityPanel;
-import com.donn.envisalink.tpi.TpiMessage;
 
 /**
  * Main Activity - launches on load
  * @author Donn
  *
  */
-public class HomeWatcherActivity extends Activity {
+public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, ActivityLog {
 
 	private Button signInButton;
 	private Button signOutButton; 
 	private Button runCommandButton;
-
-	private EditText editText;
 	
-	private ListView listView;
-	private ArrayAdapter<String> arrayAdapter;
-	
-	private PanelConnectionThread panelConnectionThread = null;
+	LoginFragment loginFragment;
+	LoginFragment statusFragment;
+	LoginFragment cmdFragment;
+	LogFragment logFragment;
 	
 	private boolean signedIn = false;
 	private boolean preferencesSet = false;
 
-	private SecurityPanel panel = new SecurityPanel();
-
 	private SharedPreferences sharedPrefs;
+	
+    private static boolean firstRun = true;
+	private static HashMap<String, Fragment> fragmentMap = new HashMap<String, Fragment>();
 	
 	Handler messageHandler = new Handler() {
 		public void handleMessage(Message msg) {
@@ -53,8 +52,8 @@ public class HomeWatcherActivity extends Activity {
 			
 			try {
 				Log.d((String) getText(R.string.app_name), getText(R.string.app_name) + ": " + messageString);
-				arrayAdapter.add(messageString);
-				listView.setSelection(listView.getCount());
+				//TODO: figure out
+				logFragment.addMessageToLog(messageString);
 				setButtons();
 			}
 			catch (Exception e) {
@@ -62,6 +61,10 @@ public class HomeWatcherActivity extends Activity {
 			}
 		}
 	};
+	
+	public void onActivityLogged(String logString) {
+		log(logString);
+	}
 	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -73,31 +76,68 @@ public class HomeWatcherActivity extends Activity {
 			preferencesSet = true;
 		}
 		
-		setContentView(R.layout.main);
-		
-		signInButton = (Button) this.findViewById(R.id.button1);
-		signInButton.setOnClickListener(new SignInButtonListener());
-		
-		signOutButton = (Button) this.findViewById(R.id.button3);
-		signOutButton.setOnClickListener(new SignOutButtonListener());
-		
-		runCommandButton = (Button) this.findViewById(R.id.button2);
-		runCommandButton.setOnClickListener(new RunCommandButtonListener());
-		
-		editText = (EditText) this.findViewById(R.id.editText1);
-		
-		listView = (ListView) this.findViewById(R.id.listView1);
-		arrayAdapter = new ArrayAdapter<String>(this, R.layout.list_item);
-		listView.setAdapter(arrayAdapter);
-		listView.setDivider(null);
-		listView.setDividerHeight(0);
-		
+		//setContentView(R.layout.log);
 		setButtons();
 		
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        actionBar.setTitle("Home Watcher - 2DS");
+        
+        Tab loginTab = actionBar.newTab();
+        loginTab.setText("Login");
+        loginTab.setTag("Login"); 
+        loginTab.setTabListener(this);
+        actionBar.addTab(loginTab);
+        
+        Tab statusTab = actionBar.newTab();
+        statusTab.setText("Status");
+        statusTab.setTag("Status"); 
+        statusTab.setTabListener(this);
+        actionBar.addTab(statusTab);
+        if (!fragmentMap.containsKey("Status")) {
+	        statusFragment = new LoginFragment(sharedPrefs);
+	        fragmentMap.put("Status", statusFragment);
+        }
+        
+        Tab cmdTab = actionBar.newTab();
+        cmdTab.setText("Cmd");
+        cmdTab.setTag("Cmd"); 
+        cmdTab.setTabListener(this);
+        actionBar.addTab(cmdTab);
+        if (!fragmentMap.containsKey("Cmd")) {
+        	cmdFragment = new LoginFragment(sharedPrefs);
+	        fragmentMap.put("Cmd", cmdFragment);
+        }
+        
+        Tab logTab = actionBar.newTab();
+        logTab.setText("Log");
+        logTab.setTag("Log"); 
+        logTab.setTabListener(this);
+        actionBar.addTab(logTab);
+        if (!fragmentMap.containsKey("Log")) {
+	        logFragment = new LogFragment();
+	        fragmentMap.put("Log", logFragment);
+        }
+        
+        if (firstRun) {
+            if (!fragmentMap.containsKey("Login")) {
+    	        loginFragment = new LoginFragment(sharedPrefs);
+    	        fragmentMap.put("Login", loginFragment);
+    	        getSupportFragmentManager().beginTransaction().add(android.R.id.content, loginFragment).commit();
+    	    }
+            firstRun = false;
+        }
+
+        
 		log("Starting HomeWatcher.");
 		log("To Sign In, push 'Sign-In'...");
 		log("Or... if first time running app, set preferences first.");
 	}
+	
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("tab", getActionBar().getSelectedNavigationIndex());
+    }
 	
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
@@ -105,12 +145,12 @@ public class HomeWatcherActivity extends Activity {
 		super.onCreateOptionsMenu(menu);
 		return true;
 	}	
-	
+
     protected void onDestroy() {
 		super.onDestroy();
 		
 		try {
-			panel.close();
+			SecurityPanel.getSecurityPanel().close();
 		} catch (PanelException e) {
 			e.printStackTrace();
 		}
@@ -143,130 +183,40 @@ public class HomeWatcherActivity extends Activity {
 		setButtons();
 	}
 
-
-
 	private void setButtons() {
-		if (!signedIn && preferencesSet) {
-			signInButton.setEnabled(true);
-		}
-		else {
-			signInButton.setEnabled(false);
-		}
-		signOutButton.setEnabled(signedIn);
-		runCommandButton.setEnabled(signedIn);
+//TODO: Figure Out
+//		if (!signedIn && preferencesSet) {
+//			signInButton.setEnabled(true);
+//		}
+//		else {
+//			signInButton.setEnabled(false);
+//		}
+//		signOutButton.setEnabled(signedIn);
+//		runCommandButton.setEnabled(signedIn);
 	}
 
-	private void log(String stringToLog) {
+	public void log(String stringToLog) {
 		Message message = Message.obtain();
 		message.obj = stringToLog;
 		messageHandler.sendMessage(message);
 	}
 	
-	private void processServerMessage(String serverMessage) {
-		TpiMessage tpiMessage = new TpiMessage(serverMessage, sharedPrefs);
-		if (tpiMessage.getCode() == 505) {
-			if (tpiMessage.getGeneralData().equals("0")) {
-				log("Login Failed... invalid credentials.");
-				signedIn = false;
-
-				try {
-					panel.close();
-				} catch (PanelException e) {
-					e.printStackTrace();
-				}
-			}
-			else if (tpiMessage.getGeneralData().equals("1")) {
-				log("Login Successful, may now run commands.");
-				signedIn = true;
-			}
-		}
-		
-		log(tpiMessage.toString());
+	@Override
+	public void onTabReselected(Tab tab, FragmentTransaction ft) {
 	}
 
-	private class PanelConnectionThread extends AsyncTask<Void, Void, Void> {
-
-		private SignonDetails signonDetails;
-		
-		public PanelConnectionThread(SignonDetails signonDetails) {
-			this.signonDetails = signonDetails;
-		}
-		
-		protected Void doInBackground(Void...args) {
-			
-			boolean run = true;
-			String line = "";
-			
-			log("Login/Socket Read Starting...");
-
-			try {
-				log("Panel was opened? " + panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()));
-				log(panel.networkLogin(signonDetails.getPassword()));
-				
-				while (run) {
-					
-						line = panel.read();
-						if (line != null) {
-							System.out.println(line);
-							processServerMessage(line);
-						}
-				}
-				log("Login/Socket Read Ending...");
-			}
-			catch (PanelException e) {
-				log(e.getMessage());
-				e.printStackTrace();
-			}
-
-			return null;
-		}
-
-	}
-	
-	private class SignInButtonListener implements OnClickListener {
-
-		public void onClick(View v) {
-			String server = sharedPrefs.getString(Preferences.SERVER, "");
-			int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, ""));
-			int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, ""));
-			String password = sharedPrefs.getString(Preferences.PASSWORD, "");
-
-			SignonDetails signonDetails = new SignonDetails(server, port, timeout, password);
-			
-			panelConnectionThread = new PanelConnectionThread(signonDetails);
-			panelConnectionThread.execute();
-			setButtons();
-		}
-	}
-	
-	private class SignOutButtonListener implements OnClickListener {
-
-		public void onClick(View v) {
-			try {
-				log("Panel was closed? " + panel.close());
-				signedIn = false;
-				setButtons();
-				panelConnectionThread.cancel(true);
-			} 
-			catch (PanelException e) {
-				log(e.getMessage());
-				e.printStackTrace();
-			}
+	@Override
+	public void onTabSelected(Tab tab, FragmentTransaction ft) {
+		Fragment testFragment = fragmentMap.get(tab.getTag().toString());
+		if (testFragment != null) {
+			FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+			transaction.replace(android.R.id.content, testFragment);
+			transaction.commit();
 		}
 	}
 
-	private class RunCommandButtonListener implements OnClickListener {
-
-		public void onClick(View v) {
-			try {
-				String command = editText.getText().toString();
-				log("Running command: " + command);
-				log(panel.runRawCommand(command));
-			} catch (PanelException e) {
-				log(e.getMessage());
-				e.printStackTrace();
-			}
-		}
+	@Override
+	public void onTabUnselected(Tab tab, FragmentTransaction ft) {
 	}
 
 }

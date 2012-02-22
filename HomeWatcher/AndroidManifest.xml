@@ -15,7 +15,8 @@
         <activity
             android:label="@string/app_name"
             android:name="com.donn.homewatcher.HomeWatcherActivity" 
-            android:windowSoftInputMode="stateHidden">
+            android:windowSoftInputMode="stateHidden"
+            android:theme="@style/Theme.Sherlock">
             
             <intent-filter >
                 <action android:name="android.intent.action.MAIN" />

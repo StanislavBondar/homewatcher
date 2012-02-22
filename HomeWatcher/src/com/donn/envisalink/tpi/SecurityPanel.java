@@ -12,6 +12,18 @@ public class SecurityPanel {
 	private PanelSession panelSession = PanelSession.getPanelSession();
 	private Command command;
 	private PanelTransaction panelTransaction;
+	private static SecurityPanel securityPanel = null;
+	
+	private SecurityPanel() {
+		
+	}
+	
+	public static SecurityPanel getSecurityPanel() {
+		if (securityPanel == null) {
+			securityPanel = new SecurityPanel();
+		}
+		return securityPanel;
+	}
 	
 	public String read() throws PanelException {
 		panelSession = PanelSession.getPanelSession();
