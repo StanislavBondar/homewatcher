@@ -135,6 +135,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	        //ft = getSupportFragmentManager().beginTransaction();
 	        ft.detach(logTabFragment);
 	        ft.detach(loggingFragment);
+	        //TODO: not sure why uncommenting this code allows this to run, else exception
 	        //ft.commit();
         }
         
