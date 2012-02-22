@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    
+        <Button
+            android:id="@+id/button_run_command"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Run Command" />
+
+        <EditText
+            android:id="@+id/edit_command_to_run"
+            android:text="001"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+        </EditText>
+
+</merge>
