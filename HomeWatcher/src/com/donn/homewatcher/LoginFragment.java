@@ -30,6 +30,8 @@ public class LoginFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+		setRetainInstance(true);
     }
     
     @Override
@@ -50,7 +52,6 @@ public class LoginFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.login, container, false);
         
-        //TODO: Null is here!!!
 		signInButton = (Button) v.findViewById(R.id.button1);
 		signInButton.setOnClickListener(new SignInButtonListener());
 		
@@ -108,7 +109,6 @@ public class LoginFragment extends Fragment {
 			try {
 				logListener.logActivity("Panel was closed? " + SecurityPanel.getSecurityPanel().close());
 			} catch (PanelException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			//TODO: Figure this out

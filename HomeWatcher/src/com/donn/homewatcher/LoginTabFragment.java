@@ -10,6 +10,8 @@ public class LoginTabFragment extends Fragment {
 	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		setRetainInstance(true);
 	}
 	
     @Override    

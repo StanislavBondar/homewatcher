@@ -8,7 +8,16 @@ import android.view.ViewGroup;
 
 public class LogTabFragment extends Fragment {
 	
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {        
+	
+	
+    @Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		
+		setRetainInstance(true);
+	}
+
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {        
     	// Inflate the layout for this fragment        
     	return inflater.inflate(R.layout.log_tab_fragment, container, false);
     }

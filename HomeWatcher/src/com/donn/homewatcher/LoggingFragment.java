@@ -12,8 +12,14 @@ public class LoggingFragment extends ListFragment {
 	
 	private ArrayAdapter<String> stringAdapter;
 	
+	public LoggingFragment() {
+		System.out.println("Created Fragment");
+	}
+	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		setRetainInstance(true);
 		
 		if (stringAdapter == null || stringAdapter.isEmpty()) {
 			stringAdapter = new ArrayAdapter<String>(getActivity(), R.layout.listline);
@@ -23,7 +29,6 @@ public class LoggingFragment extends ListFragment {
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		// TODO Auto-generated method stub
 		return super.onCreateView(inflater, container, savedInstanceState);
 	}
 	
@@ -34,7 +39,6 @@ public class LoggingFragment extends ListFragment {
 
 	@Override
 	public void onAttach(SupportActivity activity) {
-		// TODO Auto-generated method stub
 		super.onAttach(activity);
 		
 		System.out.println("LOGGING FRAGMENT: ATTACHED");
@@ -42,7 +46,6 @@ public class LoggingFragment extends ListFragment {
 
 	@Override
 	public void onDetach() {
-		// TODO Auto-generated method stub
 		super.onDetach();
 		
 		System.out.println("LOGGING FRAGMENT: DETACHED");

@@ -12,6 +12,7 @@ import android.support.v4.app.ActionBar;
 import android.support.v4.app.ActionBar.Tab;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.Menu;
 import android.support.v4.view.MenuItem;
@@ -37,13 +38,13 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	private static String STATUS = "Status";
 	private static String CMD = "Cmd";
 	private static String LOG = "Log";
+	private static String LOGGING = "Logging";
 	
-	private static LoggingFragment loggingFragment = new LoggingFragment();
-	
-	private LoginFragment loginFragment = new LoginFragment();
-	private LoginFragment statusFragment = new LoginFragment();
-	private LoginFragment cmdFragment = new LoginFragment();
-	private LogTabFragment logTabFragment = new LogTabFragment();
+	private LoggingFragment loggingFragment;
+	private LoginFragment loginFragment;
+	private LoginFragment statusFragment;
+	private LoginFragment cmdFragment;
+	private LogTabFragment logTabFragment;
 	
 	private HashMap<String, Fragment[]> fragmentMap = new HashMap<String, Fragment[]>();
 	
@@ -57,13 +58,15 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
+		FragmentManager fm = getSupportFragmentManager();
+		
 		sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
 		
 		//Means preferences were already set, don't need to force preference set again
 		if (sharedPrefs.contains("server")) {
 			preferencesSet = true;
 		}
-
+		
 		setButtons();
 		
         ActionBar actionBar = getSupportActionBar();
@@ -74,44 +77,78 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         loginTab.setText(LOGIN);
         loginTab.setTag(LOGIN); 
         loginTab.setTabListener(this);
+        if (savedInstanceState != null) {
+        	loginFragment = (LoginFragment) fm.getFragment(savedInstanceState, LOGIN);
+        }
+        if (loginFragment == null) {
+        	loginFragment = new LoginFragment();
+        }
         fragmentMap.put(LOGIN, new Fragment[]{loginFragment});
-        getSupportFragmentManager().beginTransaction().add(android.R.id.content, loginFragment).detach(loginFragment).commit();
+        fm.beginTransaction().add(android.R.id.content, loginFragment, LOGIN).detach(loginFragment).commit();
         actionBar.addTab(loginTab);
-
+        
         Tab statusTab = actionBar.newTab();
         statusTab.setText(STATUS);
         statusTab.setTag(STATUS); 
         statusTab.setTabListener(this);
         actionBar.addTab(statusTab);
+        if (savedInstanceState != null) {
+        	statusFragment = (LoginFragment) fm.getFragment(savedInstanceState, STATUS);
+        }
+        if (statusFragment == null) {
+        	statusFragment = new LoginFragment();
+        }
         fragmentMap.put(STATUS, new Fragment[]{statusFragment});
-        getSupportFragmentManager().beginTransaction().add(android.R.id.content, statusFragment).detach(statusFragment).commit();
+        getSupportFragmentManager().beginTransaction().add(android.R.id.content, statusFragment, STATUS).detach(statusFragment).commit();
         
         Tab cmdTab = actionBar.newTab();
         cmdTab.setText(CMD);
         cmdTab.setTag(CMD); 
         cmdTab.setTabListener(this);
         actionBar.addTab(cmdTab);
+        if (savedInstanceState != null) {
+        	cmdFragment = (LoginFragment) fm.getFragment(savedInstanceState, CMD);
+        }
+        if (cmdFragment == null) {
+        	cmdFragment = new LoginFragment();
+        }
         fragmentMap.put(CMD, new Fragment[]{cmdFragment});
-        getSupportFragmentManager().beginTransaction().add(android.R.id.content, cmdFragment).detach(cmdFragment).commit();
+        getSupportFragmentManager().beginTransaction().add(android.R.id.content, cmdFragment, CMD).detach(cmdFragment).commit();
         
         Tab logTab = actionBar.newTab();
         logTab.setText(LOG);
         logTab.setTag(LOG); 
         logTab.setTabListener(this);
         actionBar.addTab(logTab);
+        if (savedInstanceState != null) {
+        	logTabFragment = (LogTabFragment) fm.getFragment(savedInstanceState, LOG);
+        }
+        if (logTabFragment == null) {
+        	logTabFragment = new LogTabFragment();
+        }
+        if (savedInstanceState != null) {
+        	loggingFragment = (LoggingFragment) fm.getFragment(savedInstanceState, LOGGING);
+        }
+        if (loggingFragment == null) {
+        	loggingFragment = new LoggingFragment();
+        }
         fragmentMap.put(LOG, new Fragment[]{logTabFragment, loggingFragment});
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.add(android.R.id.content, logTabFragment).detach(logTabFragment);
-        ft.add(R.id.id_log_layout, loggingFragment).detach(loggingFragment);
+        ft.add(android.R.id.content, logTabFragment, LOG).detach(logTabFragment);
+        ft.add(R.id.id_log_layout, loggingFragment, LOGGING).detach(loggingFragment);
         ft.commit();
         
         if (savedInstanceState != null) {
             getActionBar().setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
         }
         
-		log("Starting HomeWatcher.");
-		log("To Sign In, push 'Sign-In'...");
-		log("Or... if first time running app, set preferences first.");
+        if (savedInstanceState == null) {
+			log("Starting HomeWatcher.");
+			log("To Sign In, push 'Sign-In'...");
+			log("Or... if first time running app, set preferences first.");
+        }
+        
+        //TODO: Rotate screen and switch tabs sometimes overlays the image, figure out why
 	}
 	
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -140,17 +177,11 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	@Override
 	protected void onPause() {
 		super.onPause();
-		
-
 	}
-	
-	
 
 	@Override
 	protected void onStop() {
-		// TODO Auto-generated method stub
 		super.onStop();
-		
 	}
 
 	@Override
@@ -160,17 +191,12 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	}
 
 	protected void onSaveInstanceState(Bundle outState) {
-		//TODO: Problem is onPause is called when screen goes dark, and all fragments are removed above.
-		//Is there a better option than onPause that wouldn't make us restore everytime?
 		Collection<Fragment[]> fragmentArrays = fragmentMap.values();
-		FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 		for (Fragment[] fragmentArray : fragmentArrays) {
 			for (Fragment fragment : fragmentArray) {
-				transaction.remove(fragment);
+				getSupportFragmentManager().putFragment(outState, fragment.getTag(), fragment);
 			}
 		}
-		transaction.commit();
-		fragmentMap.clear();
 		
 	    super.onSaveInstanceState(outState);
 	    outState.putInt("tab", getActionBar().getSelectedNavigationIndex());
