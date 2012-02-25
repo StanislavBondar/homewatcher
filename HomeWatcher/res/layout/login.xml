@@ -11,13 +11,13 @@
         android:orientation="horizontal" >
 
         <Button
-            android:id="@+id/button1"
+            android:id="@+id/button_sign_in"
             android:layout_width="match_parent"
             android:layout_height="fill_parent"
             android:text="Sign In"/>
 
         <Button
-            android:id="@+id/button3"
+            android:id="@+id/button_sign_out"
             android:layout_width="match_parent"
             android:layout_height="fill_parent"
             android:text="Sign Out" />

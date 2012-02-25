@@ -3,44 +3,4 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
-
-<!--     <LinearLayout -->
-<!--         android:id="@+id/horizontalLayout" -->
-<!--         android:layout_width="wrap_content" -->
-<!--         android:layout_height="wrap_content" -->
-<!--         android:orientation="horizontal" > -->
-
-<!--         <Button -->
-<!--             android:id="@+id/button1" -->
-<!--             android:layout_width="match_parent" -->
-<!--             android:layout_height="fill_parent" -->
-<!--             android:text="Sign In"/> -->
-
-<!--         <Button -->
-<!--             android:id="@+id/button3" -->
-<!--             android:layout_width="match_parent" -->
-<!--             android:layout_height="fill_parent" -->
-<!--             android:text="Sign Out" /> -->
-
-<!--     </LinearLayout> -->
-
-<!--     <Button -->
-<!--         android:id="@+id/button2" -->
-<!--         android:layout_width="match_parent" -->
-<!--         android:layout_height="wrap_content" -->
-<!--         android:text="Run Command" /> -->
-
-<!--     <EditText -->
-<!--         android:id="@+id/editText1" -->
-<!--         android:layout_width="match_parent" -->
-<!--         android:layout_height="wrap_content"  -->
-<!--         android:text="001" -->
-<!--         /> -->
-
-<!--     <ListView -->
-<!--         android:id="@+id/listView1" -->
-<!--         android:layout_width="match_parent" -->
-<!--         android:layout_height="wrap_content" > -->
-<!--     </ListView> -->
-
 </LinearLayout>

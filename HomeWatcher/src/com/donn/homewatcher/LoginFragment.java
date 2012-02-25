@@ -22,7 +22,7 @@ public class LoginFragment extends Fragment {
 	private PanelConnectionThread panelConnectionThread = null;
 	private SharedPreferences sharedPrefs;
 	
-	private ActivityLog logListener;
+	private FragmentListener fragmentListener;
 	
     /**
      * When creating, retrieve this instance's number from its arguments.
@@ -37,13 +37,23 @@ public class LoginFragment extends Fragment {
     @Override
     public void onAttach(SupportActivity activity) {
         super.onAttach(activity);
+        
+		System.out.println("LOGIN FRAGMENT: ATTACHED");
+        
         try {
-            logListener = (ActivityLog) activity;
+            fragmentListener = (FragmentListener) activity;
             sharedPrefs = activity.getSharedPreferences(Preferences.PREF_FILE, Preferences.MODE_PRIVATE);
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
         }
     }
+    
+	@Override
+	public void onDetach() {
+		super.onDetach();
+		
+		System.out.println("LOGIN FRAGMENT: DETACHED");
+	}
 
     /**
      * The Fragment's UI is just a simple text view showing its
@@ -52,10 +62,10 @@ public class LoginFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.login, container, false);
         
-		signInButton = (Button) v.findViewById(R.id.button1);
+		signInButton = (Button) v.findViewById(R.id.button_sign_in);
 		signInButton.setOnClickListener(new SignInButtonListener());
 		
-		signOutButton = (Button) v.findViewById(R.id.button3);
+		signOutButton = (Button) v.findViewById(R.id.button_sign_out);
 		signOutButton.setOnClickListener(new SignOutButtonListener());
         
         return v;
@@ -65,9 +75,8 @@ public class LoginFragment extends Fragment {
 		TpiMessage tpiMessage = new TpiMessage(serverMessage, sharedPrefs);
 		if (tpiMessage.getCode() == 505) {
 			if (tpiMessage.getGeneralData().equals("0")) {
-				logListener.logActivity("Login Failed... invalid credentials.");
-				//TODO: Figure Out
-				//signedIn = false;
+				fragmentListener.logActivity("Login Failed... invalid credentials.");
+				fragmentListener.setSignedIn(false);
 
 				try {
 					SecurityPanel.getSecurityPanel().close();
@@ -76,13 +85,12 @@ public class LoginFragment extends Fragment {
 				}
 			}
 			else if (tpiMessage.getGeneralData().equals("1")) {
-				logListener.logActivity("Login Successful, may now run commands.");
-				//TODO: Figure out
-				//signedIn = true;
+				fragmentListener.logActivity("Login Successful, may now run commands.");
+				fragmentListener.setSignedIn(true);
 			}
 		}
 		
-		logListener.logActivity(tpiMessage.toString());
+		fragmentListener.logActivity(tpiMessage.toString());
 	}
     
 	private class SignInButtonListener implements OnClickListener {
@@ -97,9 +105,7 @@ public class LoginFragment extends Fragment {
 			SignonDetails signonDetails = new SignonDetails(server, port, timeout, password);
 			
 			panelConnectionThread = new PanelConnectionThread(signonDetails);
-			panelConnectionThread.execute();
-			//TODO: Need to figure out how to get this to work
-			//mainActivity.setButtons();
+			panelConnectionThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
 		}
 	}
 	
@@ -107,13 +113,11 @@ public class LoginFragment extends Fragment {
 
 		public void onClick(View v) {
 			try {
-				logListener.logActivity("Panel was closed? " + SecurityPanel.getSecurityPanel().close());
+				fragmentListener.logActivity("Panel was closed? " + SecurityPanel.getSecurityPanel().close());
 			} catch (PanelException e) {
 				e.printStackTrace();
 			}
-			//TODO: Figure this out
-			//signedIn = false;
-			//setButtons();
+			fragmentListener.setSignedIn(false);
 			panelConnectionThread.cancel(true);
 		}
 	}
@@ -133,11 +137,11 @@ public class LoginFragment extends Fragment {
 			boolean run = true;
 			String line = "";
 			
-			logListener.logActivity("Login/Socket Read Starting...");
+			fragmentListener.logActivity("Login/Socket Read Starting...");
 
 			try {
-				logListener.logActivity("Panel was opened? " + panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()));
-				logListener.logActivity(panel.networkLogin(signonDetails.getPassword()));
+				fragmentListener.logActivity("Panel was opened? " + panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()));
+				fragmentListener.logActivity(panel.networkLogin(signonDetails.getPassword()));
 				
 				while (run) {
 					
@@ -147,10 +151,10 @@ public class LoginFragment extends Fragment {
 							processServerMessage(line);
 						}
 				}
-				logListener.logActivity("Login/Socket Read Ending...");
+				fragmentListener.logActivity("Login/Socket Read Ending...");
 			}
 			catch (PanelException e) {
-				logListener.logActivity(e.getMessage());
+				fragmentListener.logActivity(e.getMessage());
 				e.printStackTrace();
 			}
 

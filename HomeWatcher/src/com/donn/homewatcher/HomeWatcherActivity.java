@@ -28,7 +28,7 @@ import com.donn.envisalink.tpi.SecurityPanel;
  * @author Donn
  *
  */
-public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, ActivityLog {
+public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, FragmentListener {
 
 	private Button signInButton;
 	private Button signOutButton; 
@@ -44,7 +44,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	private LoginFragment loginFragment;
 	private LoginFragment statusFragment;
 	private LoginFragment cmdFragment;
-	private LogTabFragment logTabFragment;
+	private LoggingTabFragment logTabFragment;
 	
 	private HashMap<String, Fragment[]> fragmentMap = new HashMap<String, Fragment[]>();
 	
@@ -52,8 +52,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	private boolean preferencesSet = false;
 
 	private SharedPreferences sharedPrefs;
-	
-    private static boolean firstRun = true;
 	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -66,9 +64,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		if (sharedPrefs.contains("server")) {
 			preferencesSet = true;
 		}
-		
-		setButtons();
-		
+
         ActionBar actionBar = getSupportActionBar();
         actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         actionBar.setTitle("Home Watcher - 2DS");
@@ -121,10 +117,10 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         logTab.setTabListener(this);
         actionBar.addTab(logTab);
         if (savedInstanceState != null) {
-        	logTabFragment = (LogTabFragment) fm.getFragment(savedInstanceState, LOG);
+        	logTabFragment = (LoggingTabFragment) fm.getFragment(savedInstanceState, LOG);
         }
         if (logTabFragment == null) {
-        	logTabFragment = new LogTabFragment();
+        	logTabFragment = new LoggingTabFragment();
         }
         if (savedInstanceState != null) {
         	loggingFragment = (LoggingFragment) fm.getFragment(savedInstanceState, LOGGING);
@@ -142,13 +138,20 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
             getActionBar().setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
         }
         
+        //TODO: Need to find a way to either get these buttons so I can set them, or let the
+        //containing fragments set these buttons on and off based on input from the activity.
+        signInButton = (Button) loginFragment.getView().findViewById(R.id.button_sign_in);
+        signOutButton = (Button) loginFragment.getView().findViewById(R.id.button_sign_out);
+        runCommandButton = (Button) logTabFragment.getView().findViewById(R.id.button_run_command);
+        
+        setButtons();
+        
         if (savedInstanceState == null) {
 			log("Starting HomeWatcher.");
 			log("To Sign In, push 'Sign-In'...");
 			log("Or... if first time running app, set preferences first.");
         }
-        
-        //TODO: Rotate screen and switch tabs sometimes overlays the image, figure out why
+
 	}
 	
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -187,6 +190,16 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	@Override
 	protected void onResume() {
 		super.onResume();
+		
+		//Since onTabSelected is not called when rotating or when turning screen off, manually attach
+		String currentTabTag = getSupportActionBar().getTabAt(getActionBar().getSelectedNavigationIndex()).getTag().toString();
+		Fragment[] fragmentsToAttach = fragmentMap.get(currentTabTag);
+		FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+		for (Fragment fragment : fragmentsToAttach) {
+			transaction.attach(fragment);
+		}
+		transaction.commit();
+
 		setButtons();
 	}
 
@@ -197,6 +210,15 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				getSupportFragmentManager().putFragment(outState, fragment.getTag(), fragment);
 			}
 		}
+		
+		//Since onTabDeselected is not called when rotating or when turning screen off, manually detach
+		String currentTabTag = getSupportActionBar().getTabAt(getActionBar().getSelectedNavigationIndex()).getTag().toString();
+		Fragment[] fragmentsToDetach = fragmentMap.get(currentTabTag);
+		FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+		for (Fragment fragment : fragmentsToDetach) {
+			transaction.detach(fragment);
+		}
+		transaction.commit();
 		
 	    super.onSaveInstanceState(outState);
 	    outState.putInt("tab", getActionBar().getSelectedNavigationIndex());
@@ -211,18 +233,22 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			e.printStackTrace();
 		}
 	}
-    
+	
     private void setButtons() {
-//TODO: Figure Out
-//		if (!signedIn && preferencesSet) {
-//			signInButton.setEnabled(true);
-//		}
-//		else {
-//			signInButton.setEnabled(false);
-//		}
-//		signOutButton.setEnabled(signedIn);
-//		runCommandButton.setEnabled(signedIn);
+		if (!signedIn && preferencesSet) {
+			signInButton.setEnabled(true);
+		}
+		else {
+			signInButton.setEnabled(false);
+		}
+		signOutButton.setEnabled(signedIn);
+		runCommandButton.setEnabled(signedIn);
 	}
+    
+    public void setSignedIn(boolean signedIn) {
+    	this.signedIn = signedIn;
+    	setButtons();
+    }
     
 	public void logActivity(String logString) {
 		log(logString);

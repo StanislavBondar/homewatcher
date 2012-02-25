@@ -25,6 +25,9 @@ public class TpiMessage {
 		parseMessage();
 	}
 	
+	/**
+	 * Based on EnvisalinkTPI-0-09.PDF - 02-17-2012
+	 */
 	private void parseMessage() {
 		
 		if (fullMessage.length() > 3) {
@@ -49,6 +52,16 @@ public class TpiMessage {
 					
 				case 505:
 					englishDescription = "Login Response (success=1, fail=0)";
+					generalData = fullMessage.substring(3);
+					break;
+					
+				case 510:
+					englishDescription = "Keypad LED State - Partition 1 Only";
+					generalData = fullMessage.substring(3);
+					break;
+					
+				case 511:
+					englishDescription = "Keypad LED Flash State - Partition 1 Only";
 					generalData = fullMessage.substring(3);
 					break;
 					
@@ -115,6 +128,11 @@ public class TpiMessage {
 					zone = Integer.parseInt(fullMessage.substring(3));
 					break;
 					
+				case 615:
+					englishDescription = "Envisalink Zone Timer Dump";
+					generalData = fullMessage.substring(3);
+					break;
+					
 				case 620:
 					englishDescription = "Duress Alarm";
 					generalData = fullMessage.substring(3);
@@ -155,14 +173,14 @@ public class TpiMessage {
 					break;
 					
 				case 652:
-					englishDescription = "Partition Armed";
-					partition = Integer.parseInt(fullMessage.substring(3));
+					englishDescription = "Partition Armed (0=Away/1=Stay/2=ZEA/3=ZES)";
+					partition = Integer.parseInt(fullMessage.substring(3, 4));
+					mode = Integer.parseInt(fullMessage.substring(4));
 					break;
 					
 				case 653:
-					englishDescription = "Partition Armed - End of Delay";
-					partition = Integer.parseInt(fullMessage.substring(3, 4));
-					mode = Integer.parseInt(fullMessage.substring(4));
+					englishDescription = "Partition Armed - Force Arming Enabled";
+					partition = Integer.parseInt(fullMessage.substring(3));
 					break;
 					
 				case 654:
@@ -171,7 +189,7 @@ public class TpiMessage {
 					break;
 					
 				case 655:
-					englishDescription = "Partition Disarmed - No Alarm In Memory";
+					englishDescription = "Partition Disarmed";
 					partition = Integer.parseInt(fullMessage.substring(3));
 					break;
 					
@@ -187,6 +205,16 @@ public class TpiMessage {
 					
 				case 658:
 					englishDescription = "Keypad Logout";
+					partition = Integer.parseInt(fullMessage.substring(3));
+					break;
+					
+				case 659:
+					englishDescription = "Partition Failed to Arm";
+					partition = Integer.parseInt(fullMessage.substring(3));
+					break;
+					
+				case 660:
+					englishDescription = "PGM Output is in Progress";
 					partition = Integer.parseInt(fullMessage.substring(3));
 					break;
 					
@@ -211,22 +239,17 @@ public class TpiMessage {
 					break;
 					
 				case 672:
-					englishDescription = "System Arming In Progress";
+					englishDescription = "Failure to Arm";
 					partition = Integer.parseInt(fullMessage.substring(3));
 					break;
 					
 				case 673:
-					englishDescription = "Partition Disarmed - Alarm Occurred While Armed";
+					englishDescription = "Partition is Busy";
 					partition = Integer.parseInt(fullMessage.substring(3));
 					break;
 					
 				case 674:
-					englishDescription = "Alarm Zone Selected [*3]";
-					partition = Integer.parseInt(fullMessage.substring(3));
-					break;
-					
-				case 675:
-					englishDescription = "Partition Ready - Force Arming Enabled";
+					englishDescription = "System Arming in Progress";
 					partition = Integer.parseInt(fullMessage.substring(3));
 					break;
 					
@@ -315,6 +338,11 @@ public class TpiMessage {
 					englishDescription = "Fire Trouble Alarm Restore";
 					break;
 					
+				case 849:
+					englishDescription = "Verbose Trouble Status";
+					generalData = fullMessage.substring(3);
+					break;
+					
 				case 850:
 					englishDescription = "Partition Busy";
 					partition = Integer.parseInt(fullMessage.substring(3));
@@ -329,19 +357,17 @@ public class TpiMessage {
 					englishDescription = "Code Required";
 					break;
 					
-				case 901:
+				case 921:
 					englishDescription = "Master Code Required";
 					break;
 					
-				case 902:
+				case 922:
 					englishDescription = "Installers Code Required";
 					break;
 					
 				default:
 					englishDescription = "Unknown Code: " + code;
 					break;
-				
-			
 			}
 			
 		}
@@ -354,11 +380,11 @@ public class TpiMessage {
 		sb.append(englishDescription);
 		sb.append(" --");
 		
-		if (partition > 0) {
+		if (partition > -1) {
 			sb.append(" partition: ");
 			sb.append(partition);
 		}
-		if (zone > 0) {
+		if (zone > -1) {
 			//Maps zones to the actual "english" named zones, from preferences
 			sb.append(" zone " + zone + ": ");
 			sb.append(sharedPreferences.getString("z" + zone, ""));
@@ -371,11 +397,11 @@ public class TpiMessage {
 //			sb.append(" code: ");
 //			sb.append(code);
 //		}
-		if (user > 0) {
+		if (user > -1) {
 			sb.append(" user: ");
 			sb.append(user);
 		}
-		if (mode > 0) {
+		if (mode > -1) {
 			sb.append(" mode: ");
 			sb.append(mode);
 		}
