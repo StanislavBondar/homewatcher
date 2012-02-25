@@ -17,6 +17,7 @@ import android.widget.EditText;
 public class LoggingTabFragment extends Fragment {
 	
 	private Button runCommandButton;
+	
 	private RunCommandThread panelConnectionThread;
 	
 	private FragmentListener logListener;
@@ -34,7 +35,7 @@ public class LoggingTabFragment extends Fragment {
 		
 		runCommandButton = (Button) view.findViewById(R.id.button_run_command);
 		runCommandButton.setOnClickListener(new RunCommandButtonListener());
-
+		
 		return view;
     }
 	
@@ -56,6 +57,25 @@ public class LoggingTabFragment extends Fragment {
 		super.onDetach();
 		
 		System.out.println("LOGTAB FRAGMENT: DETACHED");
+	}
+	
+    
+    @Override
+	public void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+	}
+
+	@Override
+	public void onPause() {
+		// TODO Auto-generated method stub
+		super.onPause();
+	}
+	
+	public void enableRunCommandButton(boolean enabled) {
+		if (runCommandButton != null) {
+			runCommandButton.setEnabled(enabled);
+		}
 	}
 	
 	private class RunCommandButtonListener implements OnClickListener {

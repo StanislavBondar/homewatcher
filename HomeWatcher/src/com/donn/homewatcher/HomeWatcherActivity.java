@@ -18,7 +18,6 @@ import android.support.v4.view.Menu;
 import android.support.v4.view.MenuItem;
 import android.util.Log;
 import android.view.MenuInflater;
-import android.widget.Button;
 
 import com.donn.envisalink.communication.PanelException;
 import com.donn.envisalink.tpi.SecurityPanel;
@@ -30,10 +29,6 @@ import com.donn.envisalink.tpi.SecurityPanel;
  */
 public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, FragmentListener {
 
-	private Button signInButton;
-	private Button signOutButton; 
-	private Button runCommandButton;
-	
 	private static String LOGIN = "Login";
 	private static String STATUS = "Status";
 	private static String CMD = "Cmd";
@@ -138,14 +133,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
             getActionBar().setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
         }
         
-        //TODO: Need to find a way to either get these buttons so I can set them, or let the
-        //containing fragments set these buttons on and off based on input from the activity.
-        signInButton = (Button) loginFragment.getView().findViewById(R.id.button_sign_in);
-        signOutButton = (Button) loginFragment.getView().findViewById(R.id.button_sign_out);
-        runCommandButton = (Button) logTabFragment.getView().findViewById(R.id.button_run_command);
-        
-        setButtons();
-        
         if (savedInstanceState == null) {
 			log("Starting HomeWatcher.");
 			log("To Sign In, push 'Sign-In'...");
@@ -168,7 +155,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				Intent i = new Intent(HomeWatcherActivity.this, Preferences.class);
 				startActivity(i);
 				preferencesSet = true;
-				setButtons();
 			} catch (Exception e) {
 				log(e.getMessage());
 				e.printStackTrace();
@@ -199,8 +185,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			transaction.attach(fragment);
 		}
 		transaction.commit();
-
-		setButtons();
 	}
 
 	protected void onSaveInstanceState(Bundle outState) {
@@ -236,18 +220,17 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	
     private void setButtons() {
 		if (!signedIn && preferencesSet) {
-			signInButton.setEnabled(true);
+			loginFragment.enableSignInButton(true);
 		}
 		else {
-			signInButton.setEnabled(false);
+			loginFragment.enableSignInButton(false);
 		}
-		signOutButton.setEnabled(signedIn);
-		runCommandButton.setEnabled(signedIn);
+		loginFragment.enableSignOutButton(signedIn);
+		logTabFragment.enableRunCommandButton(signedIn);
 	}
     
     public void setSignedIn(boolean signedIn) {
     	this.signedIn = signedIn;
-    	setButtons();
     }
     
 	public void logActivity(String logString) {
@@ -265,9 +248,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			String messageString = msg.obj.toString();
 			
 			try {
+				setButtons();
 				Log.d((String) getText(R.string.app_name), getText(R.string.app_name) + ": " + messageString);
 				loggingFragment.addMessageToLog(messageString);
-				setButtons();
 			}
 			catch (Exception e) {
 				e.printStackTrace();

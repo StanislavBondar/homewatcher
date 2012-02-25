@@ -38,6 +38,11 @@ public class LoggingFragment extends ListFragment {
 	}
 
 	public void addMessageToLog(String messageString) {
+		if (stringAdapter == null || stringAdapter.isEmpty()) {
+			stringAdapter = new ArrayAdapter<String>(getActivity(), R.layout.listline);
+			setListAdapter(stringAdapter);
+		}
+		
 		stringAdapter.add(messageString);
 		setListAdapter(stringAdapter);
 

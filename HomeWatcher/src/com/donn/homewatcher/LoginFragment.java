@@ -19,6 +19,7 @@ public class LoginFragment extends Fragment {
 	
 	private Button signInButton;
 	private Button signOutButton;
+	
 	private PanelConnectionThread panelConnectionThread = null;
 	private SharedPreferences sharedPrefs;
 	
@@ -35,6 +36,18 @@ public class LoginFragment extends Fragment {
     }
     
     @Override
+	public void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+	}
+
+	@Override
+	public void onPause() {
+		// TODO Auto-generated method stub
+		super.onPause();
+	}
+
+	@Override
     public void onAttach(SupportActivity activity) {
         super.onAttach(activity);
         
@@ -64,11 +77,19 @@ public class LoginFragment extends Fragment {
         
 		signInButton = (Button) v.findViewById(R.id.button_sign_in);
 		signInButton.setOnClickListener(new SignInButtonListener());
-		
+
 		signOutButton = (Button) v.findViewById(R.id.button_sign_out);
 		signOutButton.setOnClickListener(new SignOutButtonListener());
         
         return v;
+    }
+    
+    public void enableSignInButton(boolean enabled) {
+    	signInButton.setEnabled(enabled);
+    }
+    
+    public void enableSignOutButton(boolean enabled) {
+    	signOutButton.setEnabled(enabled);
     }
     
 	private void processServerMessage(String serverMessage) {
