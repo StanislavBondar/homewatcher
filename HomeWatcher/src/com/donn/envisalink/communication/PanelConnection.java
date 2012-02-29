@@ -22,6 +22,7 @@ public class PanelConnection {
 	}
 	
 	public String readLine() throws Exception {
+		//TODO: Figure out how to block on read
 		return in.readLine();
 	}
 

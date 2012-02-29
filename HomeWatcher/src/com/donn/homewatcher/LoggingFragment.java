@@ -3,15 +3,17 @@ package com.donn.homewatcher;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.SupportActivity;
+import android.view.View;
 import android.widget.ArrayAdapter;
 
 public class LoggingFragment extends ListFragment {
 	
 	private ArrayAdapter<String> stringAdapter;
 	private boolean isAttached = false;
+	private boolean viewCreated = false;
 	
 	public LoggingFragment() {
-		System.out.println("Created Fragment");
+		
 	}
 	
 	public void onCreate(Bundle savedInstanceState) {
@@ -26,6 +28,14 @@ public class LoggingFragment extends ListFragment {
 	}
 	
 	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onViewCreated(view, savedInstanceState);
+		
+		viewCreated = true;
+	}
+
+	@Override
 	public void onResume() {
 		super.onResume();
 		
@@ -38,15 +48,10 @@ public class LoggingFragment extends ListFragment {
 	}
 
 	public void addMessageToLog(String messageString) {
-		if (stringAdapter == null || stringAdapter.isEmpty()) {
-			stringAdapter = new ArrayAdapter<String>(getActivity(), R.layout.listline);
-			setListAdapter(stringAdapter);
-		}
-		
 		stringAdapter.add(messageString);
 		setListAdapter(stringAdapter);
 
-		if (isAttached) {
+		if (viewCreated && isAttached) {
 			setSelection(stringAdapter.getCount());
 		}
 	}
@@ -56,8 +61,6 @@ public class LoggingFragment extends ListFragment {
 		super.onAttach(activity);
 		
 		isAttached = true;
-		
-		System.out.println("LOGGING FRAGMENT: ATTACHED");
 	}
 
 	@Override
@@ -65,8 +68,6 @@ public class LoggingFragment extends ListFragment {
 		super.onDetach();
 		
 		isAttached = false;
-		
-		System.out.println("LOGGING FRAGMENT: DETACHED");
 	}
 	
 	

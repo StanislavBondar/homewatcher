@@ -18,17 +18,23 @@ import android.support.v4.view.Menu;
 import android.support.v4.view.MenuItem;
 import android.util.Log;
 import android.view.MenuInflater;
+import android.widget.Button;
 
 import com.donn.envisalink.communication.PanelException;
 import com.donn.envisalink.tpi.SecurityPanel;
+import com.donn.envisalink.tpi.TpiMessage;
 
 /**
  * Main Activity - launches on load
  * @author Donn
  *
  */
-public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, FragmentListener {
+public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, EventHandler {
 
+	private Button signInButton;
+	private Button signOutButton; 
+	private Button runCommandButton;
+	
 	private static String LOGIN = "Login";
 	private static String STATUS = "Status";
 	private static String CMD = "Cmd";
@@ -36,9 +42,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	private static String LOGGING = "Logging";
 	
 	private LoggingFragment loggingFragment;
-	private LoginFragment loginFragment;
-	private LoginFragment statusFragment;
-	private LoginFragment cmdFragment;
+	private LoginTabFragment loginFragment;
+	private StatusTabFragment statusFragment;
+	private CommandTabFragment cmdFragment;
 	private LoggingTabFragment logTabFragment;
 	
 	private HashMap<String, Fragment[]> fragmentMap = new HashMap<String, Fragment[]>();
@@ -69,10 +75,10 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         loginTab.setTag(LOGIN); 
         loginTab.setTabListener(this);
         if (savedInstanceState != null) {
-        	loginFragment = (LoginFragment) fm.getFragment(savedInstanceState, LOGIN);
+        	loginFragment = (LoginTabFragment) fm.getFragment(savedInstanceState, LOGIN);
         }
         if (loginFragment == null) {
-        	loginFragment = new LoginFragment();
+        	loginFragment = new LoginTabFragment();
         }
         fragmentMap.put(LOGIN, new Fragment[]{loginFragment});
         fm.beginTransaction().add(android.R.id.content, loginFragment, LOGIN).detach(loginFragment).commit();
@@ -84,10 +90,10 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         statusTab.setTabListener(this);
         actionBar.addTab(statusTab);
         if (savedInstanceState != null) {
-        	statusFragment = (LoginFragment) fm.getFragment(savedInstanceState, STATUS);
+        	statusFragment = (StatusTabFragment) fm.getFragment(savedInstanceState, STATUS);
         }
         if (statusFragment == null) {
-        	statusFragment = new LoginFragment();
+        	statusFragment = new StatusTabFragment();
         }
         fragmentMap.put(STATUS, new Fragment[]{statusFragment});
         getSupportFragmentManager().beginTransaction().add(android.R.id.content, statusFragment, STATUS).detach(statusFragment).commit();
@@ -98,10 +104,10 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         cmdTab.setTabListener(this);
         actionBar.addTab(cmdTab);
         if (savedInstanceState != null) {
-        	cmdFragment = (LoginFragment) fm.getFragment(savedInstanceState, CMD);
+        	cmdFragment = (CommandTabFragment) fm.getFragment(savedInstanceState, CMD);
         }
         if (cmdFragment == null) {
-        	cmdFragment = new LoginFragment();
+        	cmdFragment = new CommandTabFragment();
         }
         fragmentMap.put(CMD, new Fragment[]{cmdFragment});
         getSupportFragmentManager().beginTransaction().add(android.R.id.content, cmdFragment, CMD).detach(cmdFragment).commit();
@@ -130,13 +136,21 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         ft.commit();
         
         if (savedInstanceState != null) {
-            getActionBar().setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
+            getSupportActionBar().setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
         }
         
+        //TODO: Need to find a way to either get these buttons so I can set them, or let the
+        //containing fragments set these buttons on and off based on input from the activity.
+        //signInButton = (Button) loginFragment.getView().findViewById(R.id.button_sign_in);
+        //signOutButton = (Button) loginFragment.getView().findViewById(R.id.button_sign_out);
+        //runCommandButton = (Button) logTabFragment.getView().findViewById(R.id.button_run_command);
+        
+        setButtons();
+        
         if (savedInstanceState == null) {
-			log("Starting HomeWatcher.");
-			log("To Sign In, push 'Sign-In'...");
-			log("Or... if first time running app, set preferences first.");
+			processEvent(new Event("Starting HomeWatcher."));
+			processEvent(new Event("To Sign In, push 'Sign-In'..."));
+			processEvent(new Event("Or... if first time running app, set preferences first."));
         }
 
 	}
@@ -155,8 +169,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				Intent i = new Intent(HomeWatcherActivity.this, Preferences.class);
 				startActivity(i);
 				preferencesSet = true;
+				setButtons();
 			} catch (Exception e) {
-				log(e.getMessage());
+				processEvent(new Event(e.getMessage()));
 				e.printStackTrace();
 			}
 		}
@@ -178,13 +193,15 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		super.onResume();
 		
 		//Since onTabSelected is not called when rotating or when turning screen off, manually attach
-		String currentTabTag = getSupportActionBar().getTabAt(getActionBar().getSelectedNavigationIndex()).getTag().toString();
+		String currentTabTag = getSupportActionBar().getTabAt(getSupportActionBar().getSelectedNavigationIndex()).getTag().toString();
 		Fragment[] fragmentsToAttach = fragmentMap.get(currentTabTag);
 		FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 		for (Fragment fragment : fragmentsToAttach) {
 			transaction.attach(fragment);
 		}
 		transaction.commit();
+
+		setButtons();
 	}
 
 	protected void onSaveInstanceState(Bundle outState) {
@@ -196,7 +213,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		}
 		
 		//Since onTabDeselected is not called when rotating or when turning screen off, manually detach
-		String currentTabTag = getSupportActionBar().getTabAt(getActionBar().getSelectedNavigationIndex()).getTag().toString();
+		String currentTabTag = getSupportActionBar().getTabAt(getSupportActionBar().getSelectedNavigationIndex()).getTag().toString();
 		Fragment[] fragmentsToDetach = fragmentMap.get(currentTabTag);
 		FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 		for (Fragment fragment : fragmentsToDetach) {
@@ -205,7 +222,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		transaction.commit();
 		
 	    super.onSaveInstanceState(outState);
-	    outState.putInt("tab", getActionBar().getSelectedNavigationIndex());
+	    outState.putInt("tab", getSupportActionBar().getSelectedNavigationIndex());
 	}
 
 	protected void onDestroy() {
@@ -219,42 +236,67 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	}
 	
     private void setButtons() {
-		if (!signedIn && preferencesSet) {
-			loginFragment.enableSignInButton(true);
+
+    	if (!signedIn && preferencesSet) {
+			loginFragment.setSignInEnabled(true);
 		}
 		else {
-			loginFragment.enableSignInButton(false);
+			loginFragment.setSignInEnabled(false);
 		}
-		loginFragment.enableSignOutButton(signedIn);
-		logTabFragment.enableRunCommandButton(signedIn);
+		loginFragment.setSignOutEnabled(signedIn);
+		//runCommandButton.setEnabled(signedIn);
 	}
     
     public void setSignedIn(boolean signedIn) {
     	this.signedIn = signedIn;
+    	setButtons();
     }
-    
-	public void logActivity(String logString) {
-		log(logString);
-	}
 
-	public void log(String stringToLog) {
+	public void processEvent(Event event) {
 		Message message = Message.obtain();
-		message.obj = stringToLog;
+		message.obj = event;
 		messageHandler.sendMessage(message);
 	}
 	
 	Handler messageHandler = new Handler() {
 		public void handleMessage(Message msg) {
-			String messageString = msg.obj.toString();
+			Event event = (Event) msg.obj;
 			
 			try {
+				Log.d((String) getText(R.string.app_name), event.getMessage());
+				if (event.getType().equals(Event.LOGGING_EVENT)) {
+					loggingFragment.addMessageToLog(event.getMessage());
+				}
+				if (event.getType().equals(Event.PANEL_EVENT)) {
+					processServerMessage(event);
+				}
 				setButtons();
-				Log.d((String) getText(R.string.app_name), getText(R.string.app_name) + ": " + messageString);
-				loggingFragment.addMessageToLog(messageString);
 			}
 			catch (Exception e) {
 				e.printStackTrace();
 			}
+		}
+		
+		private void processServerMessage(Event panelEvent) {
+			TpiMessage tpiMessage = new TpiMessage(panelEvent, sharedPrefs);
+			if (tpiMessage.getCode() == 505) {
+				if (tpiMessage.getGeneralData().equals("0")) {
+					loggingFragment.addMessageToLog("Login Failed... invalid credentials.");
+					setSignedIn(false);
+
+					try {
+						SecurityPanel.getSecurityPanel().close();
+					} catch (PanelException e) {
+						e.printStackTrace();
+					}
+				}
+				else if (tpiMessage.getGeneralData().equals("1")) {
+					loggingFragment.addMessageToLog("Login Successful, may now run commands.");
+					setSignedIn(true);
+				}
+			}
+			
+			loggingFragment.addMessageToLog(tpiMessage.toString());
 		}
 	};
 

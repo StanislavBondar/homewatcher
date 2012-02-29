@@ -1,11 +1,14 @@
 package com.donn.envisalink.tpi;
 
+import com.donn.homewatcher.Event;
+
 import android.content.SharedPreferences;
 
 public class TpiMessage {
 	
 	private String fullMessage = "";
 	private String generalData = "";
+	private Event panelEvent;
 	private String englishDescription = "";
 	private int code = -1;
 	private int partition = -1;
@@ -19,8 +22,9 @@ public class TpiMessage {
 	 * @param fullMessage
 	 * @param preferences - the preferences file from which zone and other English information will be read
 	 */
-	public TpiMessage(String fullMessage, SharedPreferences preferences) {
-		this.fullMessage = fullMessage;
+	public TpiMessage(Event event, SharedPreferences preferences) {
+		this.panelEvent = event;
+		this.fullMessage = event.getMessage();
 		this.sharedPreferences = preferences;
 		parseMessage();
 	}
@@ -438,5 +442,9 @@ public class TpiMessage {
 	
 	public int getCode() {
 		return code;
+	}
+	
+	public Event getPanelEvent() {
+		return panelEvent;
 	}
 }
