@@ -51,8 +51,11 @@ public class LoggingFragment extends ListFragment {
 		stringAdapter.add(messageString);
 		setListAdapter(stringAdapter);
 
-		if (viewCreated && isAttached) {
+		try {
 			setSelection(stringAdapter.getCount());
+		}
+		catch (IllegalStateException e) {
+			//Do nothing, just means the view for the log is not currently active
 		}
 	}
 	

@@ -51,6 +51,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	
 	private boolean signedIn = false;
 	private boolean preferencesSet = false;
+	private String SIGNED_IN_KEY = "SignedInKey";
+	private String PREFERENCES_SET_KEY = "PreferencesSetKey";
+	private String TAB_KEY = "TabKey";
 
 	private SharedPreferences sharedPrefs;
 	
@@ -136,7 +139,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         ft.commit();
         
         if (savedInstanceState != null) {
-            getSupportActionBar().setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
+            getSupportActionBar().setSelectedNavigationItem(savedInstanceState.getInt(TAB_KEY, 0));
+    	    signedIn = savedInstanceState.getBoolean(SIGNED_IN_KEY);
+    	    preferencesSet = savedInstanceState.getBoolean(PREFERENCES_SET_KEY);
         }
         
         //TODO: Need to find a way to either get these buttons so I can set them, or let the
@@ -222,13 +227,16 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		transaction.commit();
 		
 	    super.onSaveInstanceState(outState);
-	    outState.putInt("tab", getSupportActionBar().getSelectedNavigationIndex());
+	    outState.putInt(TAB_KEY, getSupportActionBar().getSelectedNavigationIndex());
+	    outState.putBoolean(SIGNED_IN_KEY, signedIn);
+	    outState.putBoolean(PREFERENCES_SET_KEY, preferencesSet);
 	}
 
 	protected void onDestroy() {
 		super.onDestroy();
 		
 		try {
+			//TODO: Do we really want to close the connection on rotate?
 			SecurityPanel.getSecurityPanel().close();
 		} catch (PanelException e) {
 			e.printStackTrace();
