@@ -303,8 +303,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				byte[] bytes = data.getBytes();
 				byte byte1 = bytes[0];
 				byte byte2 = bytes[1];
-				loggingFragment.addMessageToLog(tpiMessage.toString());
 			}
+			
+			loggingFragment.addMessageToLog(tpiMessage.toString());
 		}
 	};
 
