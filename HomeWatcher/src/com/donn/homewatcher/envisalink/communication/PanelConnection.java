@@ -1,4 +1,4 @@
-package com.donn.envisalink.communication;
+package com.donn.homewatcher.envisalink.communication;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,7 +22,6 @@ public class PanelConnection {
 	}
 	
 	public String readLine() throws Exception {
-		//TODO: Figure out how to block on read
 		return in.readLine();
 	}
 

@@ -1,11 +1,11 @@
-package com.donn.envisalink.tpi;
+package com.donn.homewatcher.envisalink.tpi;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-import com.donn.envisalink.communication.PanelException;
-import com.donn.envisalink.communication.PanelSession;
+import com.donn.homewatcher.envisalink.communication.PanelException;
+import com.donn.homewatcher.envisalink.communication.PanelSession;
 
 public class SecurityPanel {
 	
@@ -15,7 +15,6 @@ public class SecurityPanel {
 	private static SecurityPanel securityPanel = null;
 	
 	private SecurityPanel() {
-		
 	}
 	
 	public static SecurityPanel getSecurityPanel() {

@@ -18,11 +18,15 @@ import android.support.v4.view.Menu;
 import android.support.v4.view.MenuItem;
 import android.util.Log;
 import android.view.MenuInflater;
-import android.widget.Button;
 
-import com.donn.envisalink.communication.PanelException;
-import com.donn.envisalink.tpi.SecurityPanel;
-import com.donn.envisalink.tpi.TpiMessage;
+import com.donn.homewatcher.envisalink.communication.PanelException;
+import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
+import com.donn.homewatcher.envisalink.tpi.TpiMessage;
+import com.donn.homewatcher.fragment.CommandTabFragment;
+import com.donn.homewatcher.fragment.LoggingSubFragment;
+import com.donn.homewatcher.fragment.LoggingTabFragment;
+import com.donn.homewatcher.fragment.LoginTabFragment;
+import com.donn.homewatcher.fragment.StatusTabFragment;
 
 /**
  * Main Activity - launches on load
@@ -31,26 +35,23 @@ import com.donn.envisalink.tpi.TpiMessage;
  */
 public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, EventHandler {
 
-	private Button signInButton;
-	private Button signOutButton; 
-	private Button runCommandButton;
-	
 	private static String LOGIN = "Login";
 	private static String STATUS = "Status";
 	private static String CMD = "Cmd";
 	private static String LOG = "Log";
 	private static String LOGGING = "Logging";
 	
-	private LoggingFragment loggingFragment;
-	private LoginTabFragment loginFragment;
+	private LoggingSubFragment loggingFragment;
+	private LoginTabFragment loginTabFragment;
 	private StatusTabFragment statusFragment;
 	private CommandTabFragment cmdFragment;
-	private LoggingTabFragment logTabFragment;
+	private LoggingTabFragment loggingTabFragment;
 	
 	private HashMap<String, Fragment[]> fragmentMap = new HashMap<String, Fragment[]>();
 	
 	private boolean signedIn = false;
 	private boolean preferencesSet = false;
+	
 	private String SIGNED_IN_KEY = "SignedInKey";
 	private String PREFERENCES_SET_KEY = "PreferencesSetKey";
 	private String TAB_KEY = "TabKey";
@@ -78,13 +79,13 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         loginTab.setTag(LOGIN); 
         loginTab.setTabListener(this);
         if (savedInstanceState != null) {
-        	loginFragment = (LoginTabFragment) fm.getFragment(savedInstanceState, LOGIN);
+        	loginTabFragment = (LoginTabFragment) fm.getFragment(savedInstanceState, LOGIN);
         }
-        if (loginFragment == null) {
-        	loginFragment = new LoginTabFragment();
+        if (loginTabFragment == null) {
+        	loginTabFragment = new LoginTabFragment();
         }
-        fragmentMap.put(LOGIN, new Fragment[]{loginFragment});
-        fm.beginTransaction().add(android.R.id.content, loginFragment, LOGIN).detach(loginFragment).commit();
+        fragmentMap.put(LOGIN, new Fragment[]{loginTabFragment});
+        fm.beginTransaction().add(android.R.id.content, loginTabFragment, LOGIN).detach(loginTabFragment).commit();
         actionBar.addTab(loginTab);
         
         Tab statusTab = actionBar.newTab();
@@ -121,20 +122,20 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         logTab.setTabListener(this);
         actionBar.addTab(logTab);
         if (savedInstanceState != null) {
-        	logTabFragment = (LoggingTabFragment) fm.getFragment(savedInstanceState, LOG);
+        	loggingTabFragment = (LoggingTabFragment) fm.getFragment(savedInstanceState, LOG);
         }
-        if (logTabFragment == null) {
-        	logTabFragment = new LoggingTabFragment();
+        if (loggingTabFragment == null) {
+        	loggingTabFragment = new LoggingTabFragment();
         }
         if (savedInstanceState != null) {
-        	loggingFragment = (LoggingFragment) fm.getFragment(savedInstanceState, LOGGING);
+        	loggingFragment = (LoggingSubFragment) fm.getFragment(savedInstanceState, LOGGING);
         }
         if (loggingFragment == null) {
-        	loggingFragment = new LoggingFragment();
+        	loggingFragment = new LoggingSubFragment();
         }
-        fragmentMap.put(LOG, new Fragment[]{logTabFragment, loggingFragment});
+        fragmentMap.put(LOG, new Fragment[]{loggingTabFragment, loggingFragment});
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.add(android.R.id.content, logTabFragment, LOG).detach(logTabFragment);
+        ft.add(android.R.id.content, loggingTabFragment, LOG).detach(loggingTabFragment);
         ft.add(R.id.id_log_layout, loggingFragment, LOGGING).detach(loggingFragment);
         ft.commit();
         
@@ -143,12 +144,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
     	    signedIn = savedInstanceState.getBoolean(SIGNED_IN_KEY);
     	    preferencesSet = savedInstanceState.getBoolean(PREFERENCES_SET_KEY);
         }
-        
-        //TODO: Need to find a way to either get these buttons so I can set them, or let the
-        //containing fragments set these buttons on and off based on input from the activity.
-        //signInButton = (Button) loginFragment.getView().findViewById(R.id.button_sign_in);
-        //signOutButton = (Button) loginFragment.getView().findViewById(R.id.button_sign_out);
-        //runCommandButton = (Button) logTabFragment.getView().findViewById(R.id.button_run_command);
         
         setButtons();
         
@@ -174,23 +169,12 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				Intent i = new Intent(HomeWatcherActivity.this, Preferences.class);
 				startActivity(i);
 				preferencesSet = true;
-				setButtons();
 			} catch (Exception e) {
 				processEvent(new Event(e.getMessage()));
 				e.printStackTrace();
 			}
 		}
 	    return true;
-	}
-
-	@Override
-	protected void onPause() {
-		super.onPause();
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
 	}
 
 	@Override
@@ -205,8 +189,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			transaction.attach(fragment);
 		}
 		transaction.commit();
-
-		setButtons();
 	}
 
 	protected void onSaveInstanceState(Bundle outState) {
@@ -235,24 +217,33 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	protected void onDestroy() {
 		super.onDestroy();
 		
-		try {
-			//TODO: Do we really want to close the connection on rotate?
-			SecurityPanel.getSecurityPanel().close();
-		} catch (PanelException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			//TODO: Do we really want to close the connection on rotate?
+//			SecurityPanel.getSecurityPanel().close();
+//		} catch (PanelException e) {
+//			e.printStackTrace();
+//		}
 	}
 	
     private void setButtons() {
 
-    	if (!signedIn && preferencesSet) {
-			loginFragment.setSignInEnabled(true);
-		}
-		else {
-			loginFragment.setSignInEnabled(false);
-		}
-		loginFragment.setSignOutEnabled(signedIn);
-		//runCommandButton.setEnabled(signedIn);
+    	if (preferencesSet) {
+	    	if (!signedIn) {
+				loginTabFragment.setSignInEnabled(true);
+				loginTabFragment.setSignOutEnabled(false);
+				loggingTabFragment.setRunCommandEnabled(false);
+			}
+			else {
+				loginTabFragment.setSignInEnabled(false);
+				loginTabFragment.setSignOutEnabled(true);
+				loggingTabFragment.setRunCommandEnabled(true);
+			}
+    	}
+    	else {
+			loginTabFragment.setSignInEnabled(false);
+			loginTabFragment.setSignOutEnabled(false);
+			loggingTabFragment.setRunCommandEnabled(false);
+    	}
 	}
     
     public void setSignedIn(boolean signedIn) {
@@ -266,6 +257,11 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		messageHandler.sendMessage(message);
 	}
 	
+	@Override
+	protected void onUserLeaveHint() {
+		super.onUserLeaveHint();
+	}
+
 	Handler messageHandler = new Handler() {
 		public void handleMessage(Message msg) {
 			Event event = (Event) msg.obj;
@@ -278,7 +274,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				if (event.getType().equals(Event.PANEL_EVENT)) {
 					processServerMessage(event);
 				}
-				setButtons();
 			}
 			catch (Exception e) {
 				e.printStackTrace();
@@ -303,8 +298,13 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					setSignedIn(true);
 				}
 			}
-			
-			loggingFragment.addMessageToLog(tpiMessage.toString());
+			else if (tpiMessage.getCode() == 510) {
+				String data = tpiMessage.getGeneralData();
+				byte[] bytes = data.getBytes();
+				byte byte1 = bytes[0];
+				byte byte2 = bytes[1];
+				loggingFragment.addMessageToLog(tpiMessage.toString());
+			}
 		}
 	};
 

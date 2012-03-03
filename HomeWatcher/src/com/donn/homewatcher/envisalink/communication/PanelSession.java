@@ -1,7 +1,7 @@
-package com.donn.envisalink.communication;
+package com.donn.homewatcher.envisalink.communication;
 
-import com.donn.envisalink.tpi.Command;
-import com.donn.envisalink.tpi.PanelTransaction;
+import com.donn.homewatcher.envisalink.tpi.Command;
+import com.donn.homewatcher.envisalink.tpi.PanelTransaction;
 
 public class PanelSession {
 	
@@ -13,7 +13,6 @@ public class PanelSession {
 			panelSession = new PanelSession();
 			panelConnection = new PanelConnection();
 		}
-		
 		return panelSession;
 	}
 	

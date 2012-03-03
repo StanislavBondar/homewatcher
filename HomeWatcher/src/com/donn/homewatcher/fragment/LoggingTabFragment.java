@@ -1,7 +1,10 @@
-package com.donn.homewatcher;
+package com.donn.homewatcher.fragment;
 
-import com.donn.envisalink.communication.PanelException;
-import com.donn.envisalink.tpi.SecurityPanel;
+import com.donn.homewatcher.Event;
+import com.donn.homewatcher.EventHandler;
+import com.donn.homewatcher.R;
+import com.donn.homewatcher.envisalink.communication.PanelException;
+import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
 
 import android.os.AsyncTask;
 import android.os.Build;
@@ -18,14 +21,16 @@ import android.widget.EditText;
 public class LoggingTabFragment extends Fragment {
 	
 	private Button runCommandButton;
+	private boolean runCommandButtonEnabled;
 	private RunCommandThread runCommandThread;
 	
-	private EventHandler logListener;
+	private EventHandler eventHandler;
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+
+		//Note: When setRetainInstance is set, savedInstanceState is not saved or returned!
 		setRetainInstance(true);
 	}
 
@@ -34,9 +39,17 @@ public class LoggingTabFragment extends Fragment {
 		View view = inflater.inflate(R.layout.log_tab_fragment, container, false);
 		
 		runCommandButton = (Button) view.findViewById(R.id.button_run_command);
+		runCommandButton.setEnabled(runCommandButtonEnabled);
 		runCommandButton.setOnClickListener(new RunCommandButtonListener());
-
+		
 		return view;
+    }
+	
+    public void setRunCommandEnabled(boolean enabled) {
+		runCommandButtonEnabled = enabled;
+    	if (runCommandButton != null) {
+    		runCommandButton.setEnabled(runCommandButtonEnabled);
+    	}
     }
 	
 	@Override
@@ -44,17 +57,12 @@ public class LoggingTabFragment extends Fragment {
 		super.onAttach(activity);
 		
         try {
-            logListener = (EventHandler) activity;
+            eventHandler = (EventHandler) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
         }
 	}
 
-	@Override
-	public void onDetach() {
-		super.onDetach();
-	}
-	
 	private class RunCommandButtonListener implements OnClickListener {
 
 		public void onClick(View v) {
@@ -68,7 +76,6 @@ public class LoggingTabFragment extends Fragment {
 		    else {
 				runCommandThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
 			}
-
 		}
 	}
 	
@@ -84,14 +91,14 @@ public class LoggingTabFragment extends Fragment {
 			
 			SecurityPanel panel = SecurityPanel.getSecurityPanel();
 			
-			logListener.processEvent(new Event("Command being executed: " + command));
+			eventHandler.processEvent(new Event("Command being executed: " + command));
 
 			try {
 				panel.runRawCommand(command);
-				logListener.processEvent(new Event("Command: " + command + " execute complete..."));
+				eventHandler.processEvent(new Event("Command: " + command + " execute complete..."));
 			}
 			catch (PanelException e) {
-				logListener.processEvent(new Event(e.getMessage()));
+				eventHandler.processEvent(new Event(e.getMessage()));
 				e.printStackTrace();
 			}
 

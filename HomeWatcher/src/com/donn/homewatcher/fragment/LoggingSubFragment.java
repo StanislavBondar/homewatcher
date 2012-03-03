@@ -1,19 +1,16 @@
-package com.donn.homewatcher;
+package com.donn.homewatcher.fragment;
+
+import com.donn.homewatcher.R;
 
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
-import android.support.v4.app.SupportActivity;
-import android.view.View;
 import android.widget.ArrayAdapter;
 
-public class LoggingFragment extends ListFragment {
+public class LoggingSubFragment extends ListFragment {
 	
 	private ArrayAdapter<String> stringAdapter;
-	private boolean isAttached = false;
-	private boolean viewCreated = false;
 	
-	public LoggingFragment() {
-		
+	public LoggingSubFragment() {
 	}
 	
 	public void onCreate(Bundle savedInstanceState) {
@@ -28,23 +25,10 @@ public class LoggingFragment extends ListFragment {
 	}
 	
 	@Override
-	public void onViewCreated(View view, Bundle savedInstanceState) {
-		// TODO Auto-generated method stub
-		super.onViewCreated(view, savedInstanceState);
-		
-		viewCreated = true;
-	}
-
-	@Override
 	public void onResume() {
 		super.onResume();
 		
 		setSelection(stringAdapter.getCount());
-	}
-
-	@Override
-	public void onPause() {
-		super.onPause();
 	}
 
 	public void addMessageToLog(String messageString) {
@@ -58,21 +42,4 @@ public class LoggingFragment extends ListFragment {
 			//Do nothing, just means the view for the log is not currently active
 		}
 	}
-	
-	@Override
-	public void onAttach(SupportActivity activity) {
-		super.onAttach(activity);
-		
-		isAttached = true;
-	}
-
-	@Override
-	public void onDetach() {
-		super.onDetach();
-		
-		isAttached = false;
-	}
-	
-	
-
 }

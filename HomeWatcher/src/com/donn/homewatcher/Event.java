@@ -1,6 +1,6 @@
 package com.donn.homewatcher;
 
-import com.donn.envisalink.tpi.TpiMessage;
+import com.donn.homewatcher.envisalink.tpi.TpiMessage;
 
 public class Event {
 	

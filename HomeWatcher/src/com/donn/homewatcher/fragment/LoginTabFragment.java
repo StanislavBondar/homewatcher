@@ -1,4 +1,4 @@
-package com.donn.homewatcher;
+package com.donn.homewatcher.fragment;
 
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -11,19 +11,22 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.Toast;
 
-import com.donn.envisalink.communication.PanelException;
-import com.donn.envisalink.tpi.SecurityPanel;
+import com.donn.homewatcher.Event;
+import com.donn.homewatcher.EventHandler;
+import com.donn.homewatcher.Preferences;
+import com.donn.homewatcher.R;
+import com.donn.homewatcher.SignonDetails;
+import com.donn.homewatcher.envisalink.communication.PanelException;
+import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
 
 public class LoginTabFragment extends Fragment {
 	
 	private Button signInButton;
-	private boolean signInButtonEnabled = true;
-	private String SIGN_IN_ENABLED_KEY = "SignInButtonKey";
+	private boolean signInButtonEnabled;
 	private Button signOutButton;
-	private boolean signOutButtonEnabled = false;
-	private String SIGN_OUT_ENABLED_KEY = "SignOutButtonKey";
+	private boolean signOutButtonEnabled;
+	
 	private ConnectAndReadThread connectAndReadThread = null;
 	private SharedPreferences sharedPrefs;
 	
@@ -51,57 +54,34 @@ public class LoginTabFragment extends Fragment {
         }
     }
     
-	@Override
-	public void onDetach() {
-		super.onDetach();
-	}
-
     /**
      * The Fragment's UI is just a simple text view showing its
      * instance number.
      */
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.login, container, false);
-        
-        if (savedInstanceState != null) {
-        	//TODO: figure out why savedInstanceState == null after rotation
-        	signInButtonEnabled = savedInstanceState.getBoolean(SIGN_IN_ENABLED_KEY);
-        	signOutButtonEnabled = savedInstanceState.getBoolean(SIGN_OUT_ENABLED_KEY);
-        }
-        
+
 		signInButton = (Button) v.findViewById(R.id.button_sign_in);
 		signInButton.setOnClickListener(new SignInButtonListener());
 		signInButton.setEnabled(signInButtonEnabled);
-		
-		signOutButton = (Button) v.findViewById(R.id.button_sign_out);
-		signOutButton.setOnClickListener(new SignOutButtonListener());
-		signOutButton.setEnabled(signOutButtonEnabled);
-        
-        return v;
+       	signOutButton = (Button) v.findViewById(R.id.button_sign_out);
+       	signOutButton.setOnClickListener(new SignOutButtonListener());
+       	signOutButton.setEnabled(signOutButtonEnabled);
+
+       	return v;
     }
     
-    @Override
-	public void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		
-    	if (signInButton != null && signOutButton != null) {
-    		outState.putBoolean(SIGN_IN_ENABLED_KEY, signInButton.isEnabled());
-    		outState.putBoolean(SIGN_OUT_ENABLED_KEY, signOutButton.isEnabled());
-    	}
-	}
-
-    
     public void setSignInEnabled(boolean enabled) {
+		signInButtonEnabled = enabled;
     	if (signInButton != null) {
-    		signInButtonEnabled = enabled;
-    		signInButton.setEnabled(enabled);
+    		signInButton.setEnabled(signInButtonEnabled);
     	}
     }
     
     public void setSignOutEnabled(boolean enabled) {
+		signOutButtonEnabled = enabled;
     	if (signOutButton != null) {
-    		signOutButtonEnabled = enabled;
-    		signOutButton.setEnabled(enabled);
+    		signOutButton.setEnabled(signOutButtonEnabled);
     	}
     }
     
@@ -110,27 +90,18 @@ public class LoginTabFragment extends Fragment {
 		public void onClick(View v) {
 			
 			String server = sharedPrefs.getString(Preferences.SERVER, "");
-			if (server.equals("")) {
-				Toast toast = Toast.makeText(getActivity(), "Preferences not yet set!!!", Toast.LENGTH_SHORT);
-				toast.show();
-				eventHandler.processEvent(new Event("Preferences not yet set."));
-			}
-			else {
-				int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, ""));
-				int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, ""));
-				String password = sharedPrefs.getString(Preferences.PASSWORD, "");
-	
-				SignonDetails signonDetails = new SignonDetails(server, port, timeout, password);
-				
-				connectAndReadThread = new ConnectAndReadThread(signonDetails);
-				if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-			        connectAndReadThread.execute((Void[])null);
-			    } 
-			    else {
-					connectAndReadThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-				}
-				//TODO: Need to figure out how to get this to work
-				//mainActivity.setButtons();
+			int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, ""));
+			int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, ""));
+			String password = sharedPrefs.getString(Preferences.PASSWORD, "");
+
+			SignonDetails signonDetails = new SignonDetails(server, port, timeout, password);
+			
+			connectAndReadThread = new ConnectAndReadThread(signonDetails);
+			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+		        connectAndReadThread.execute((Void[])null);
+		    } 
+		    else {
+				connectAndReadThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
 			}
 		}
 	}
@@ -139,11 +110,14 @@ public class LoginTabFragment extends Fragment {
 
 		public void onClick(View v) {
 			try {
-				eventHandler.processEvent(new Event("Panel was closed? " + SecurityPanel.getSecurityPanel().close()));
+				boolean closed = SecurityPanel.getSecurityPanel().close();
+				eventHandler.setSignedIn(!closed);
+				eventHandler.processEvent(new Event("Panel was closed? " + closed));
 			} catch (PanelException e) {
+				eventHandler.processEvent(new Event("Panel was not closed - due to error."));
 				e.printStackTrace();
 			}
-			eventHandler.setSignedIn(false);
+			
 			connectAndReadThread.cancel(true);
 		}
 	}

@@ -1,4 +1,4 @@
-package com.donn.envisalink.tpi;
+package com.donn.homewatcher.envisalink.tpi;
 
 public class Command {
 	

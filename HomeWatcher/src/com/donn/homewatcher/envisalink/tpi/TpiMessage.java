@@ -1,4 +1,4 @@
-package com.donn.envisalink.tpi;
+package com.donn.homewatcher.envisalink.tpi;
 
 import com.donn.homewatcher.Event;
 
@@ -35,6 +35,7 @@ public class TpiMessage {
 	private void parseMessage() {
 		
 		if (fullMessage.length() > 3) {
+			//TODO: Check last two digits of checksum - verify instead of ignoring
 			fullMessage = fullMessage.substring(0, fullMessage.length() - 2);
 			code = Integer.parseInt(fullMessage.substring(0, 3));
 			

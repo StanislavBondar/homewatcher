@@ -1,6 +1,6 @@
-package com.donn.envisalink.communication;
+package com.donn.homewatcher.envisalink.communication;
 
-import com.donn.envisalink.tpi.PanelTransaction;
+import com.donn.homewatcher.envisalink.tpi.PanelTransaction;
 
 public class PanelException extends Exception {
 	
