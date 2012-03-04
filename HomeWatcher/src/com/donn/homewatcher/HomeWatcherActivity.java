@@ -33,7 +33,7 @@ import com.donn.homewatcher.fragment.StatusTabFragment;
  * @author Donn
  *
  */
-public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, EventHandler {
+public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, IEventHandler {
 
 	private static String LOGIN = "Login";
 	private static String STATUS = "Status";
@@ -169,6 +169,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				Intent i = new Intent(HomeWatcherActivity.this, Preferences.class);
 				startActivity(i);
 				preferencesSet = true;
+				setButtons();
 			} catch (Exception e) {
 				processEvent(new Event("Menu item selection error", e));
 			}
@@ -227,21 +228,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
     private void setButtons() {
 
     	if (preferencesSet) {
-	    	if (!signedIn) {
-				loginTabFragment.setSignInEnabled(true);
-				loginTabFragment.setSignOutEnabled(false);
-				loggingTabFragment.setRunCommandEnabled(false);
-			}
-			else {
-				loginTabFragment.setSignInEnabled(false);
-				loginTabFragment.setSignOutEnabled(true);
-				loggingTabFragment.setRunCommandEnabled(true);
-			}
-    	}
-    	else {
-			loginTabFragment.setSignInEnabled(false);
-			loginTabFragment.setSignOutEnabled(false);
-			loggingTabFragment.setRunCommandEnabled(false);
+    		loginTabFragment.notifySignedIn(signedIn);
+    		loggingTabFragment.notifySignedIn(signedIn);
+    		cmdFragment.notifySignedIn(signedIn);
     	}
 	}
     

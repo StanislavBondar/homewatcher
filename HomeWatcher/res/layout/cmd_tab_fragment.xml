@@ -10,11 +10,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/button_text_arm_stay" />
-            "
+            
         <Button
             android:id="@+id/button_arm_away"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/button_text_arm_away" />
+        
+         <Button
+            android:id="@+id/button_disarm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/button_text_disarm" />
 
 </LinearLayout>

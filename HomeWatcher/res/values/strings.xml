@@ -7,8 +7,11 @@
     <string name="runCommand">Run Command</string>
     <string name="login">This is the login fragment</string>
     
+    <string name="first_load_text">This is the first time using the app, set password and user code preferences first!</string>
+    
     <string name="button_text_arm_away">Arm Away</string>
     <string name="button_text_arm_stay">Arm Stay</string>
+    <string name="button_text_disarm">Disarm</string>
     <string name="button_text_sign_in">Sign In</string>
     <string name="button_text_sign_out">Sign Out</string>
         

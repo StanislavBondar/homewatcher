@@ -11,26 +11,28 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.donn.homewatcher.Event;
-import com.donn.homewatcher.EventHandler;
+import com.donn.homewatcher.IEventHandler;
 import com.donn.homewatcher.Preferences;
 import com.donn.homewatcher.R;
 import com.donn.homewatcher.SignonDetails;
 import com.donn.homewatcher.envisalink.communication.PanelException;
 import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
 
-public class LoginTabFragment extends Fragment {
+public class LoginTabFragment extends Fragment implements ISignInAware {
 	
 	private Button signInButton;
-	private boolean signInButtonEnabled;
+	private boolean signInButtonEnabled = false;
 	private Button signOutButton;
-	private boolean signOutButtonEnabled;
+	private boolean signOutButtonEnabled = false;
+	private TextView initialTextView;
 	
 	private ConnectAndReadThread connectAndReadThread = null;
 	private SharedPreferences sharedPrefs;
 	
-	private EventHandler eventHandler;
+	private IEventHandler eventHandler;
 	
     /**
      * When creating, retrieve this instance's number from its arguments.
@@ -47,7 +49,7 @@ public class LoginTabFragment extends Fragment {
         super.onAttach(activity);
         
         try {
-            eventHandler = (EventHandler) activity;
+            eventHandler = (IEventHandler) activity;
             sharedPrefs = activity.getSharedPreferences(Preferences.PREF_FILE, Preferences.MODE_PRIVATE);
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
@@ -68,20 +70,28 @@ public class LoginTabFragment extends Fragment {
        	signOutButton.setOnClickListener(new SignOutButtonListener());
        	signOutButton.setEnabled(signOutButtonEnabled);
 
+   		initialTextView = (TextView) v.findViewById(R.id.text_first_load);
+       	if (signInButtonEnabled || signOutButtonEnabled) {
+       		initialTextView.setVisibility(View.INVISIBLE);
+       	}
+       	else {
+       		initialTextView.setVisibility(View.VISIBLE);
+       	}
+
+
        	return v;
     }
     
-    public void setSignInEnabled(boolean enabled) {
-		signInButtonEnabled = enabled;
-    	if (signInButton != null) {
-    		signInButton.setEnabled(signInButtonEnabled);
-    	}
-    }
-    
-    public void setSignOutEnabled(boolean enabled) {
-		signOutButtonEnabled = enabled;
+    public void notifySignedIn(boolean signedIn) {
+
+    	signOutButtonEnabled = signedIn;
+		signInButtonEnabled = !signedIn;
+		
     	if (signOutButton != null) {
     		signOutButton.setEnabled(signOutButtonEnabled);
+    	}
+    	if (signInButton != null) {
+    		signInButton.setEnabled(signInButtonEnabled);
     	}
     }
     

@@ -1,7 +1,7 @@
 package com.donn.homewatcher.fragment;
 
 import com.donn.homewatcher.Event;
-import com.donn.homewatcher.EventHandler;
+import com.donn.homewatcher.IEventHandler;
 import com.donn.homewatcher.R;
 import com.donn.homewatcher.envisalink.communication.PanelException;
 import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
@@ -18,13 +18,13 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 
-public class LoggingTabFragment extends Fragment {
+public class LoggingTabFragment extends Fragment implements ISignInAware {
 	
 	private Button runCommandButton;
 	private boolean runCommandButtonEnabled;
 	private RunCommandThread runCommandThread;
 	
-	private EventHandler eventHandler;
+	private IEventHandler eventHandler;
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -45,8 +45,8 @@ public class LoggingTabFragment extends Fragment {
 		return view;
     }
 	
-    public void setRunCommandEnabled(boolean enabled) {
-		runCommandButtonEnabled = enabled;
+    public void notifySignedIn(boolean signedIn) {
+		runCommandButtonEnabled = signedIn;
     	if (runCommandButton != null) {
     		runCommandButton.setEnabled(runCommandButtonEnabled);
     	}
@@ -57,7 +57,7 @@ public class LoggingTabFragment extends Fragment {
 		super.onAttach(activity);
 		
         try {
-            eventHandler = (EventHandler) activity;
+            eventHandler = (IEventHandler) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
         }

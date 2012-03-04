@@ -1,11 +1,13 @@
 package com.donn.homewatcher.fragment;
 
 import com.donn.homewatcher.Event;
-import com.donn.homewatcher.EventHandler;
+import com.donn.homewatcher.IEventHandler;
+import com.donn.homewatcher.Preferences;
 import com.donn.homewatcher.R;
 import com.donn.homewatcher.envisalink.communication.PanelException;
 import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
 
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,11 +19,17 @@ import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
-public class CommandTabFragment extends Fragment {
+public class CommandTabFragment extends Fragment implements ISignInAware {
 	
-	private EventHandler eventHandler;
+	private IEventHandler eventHandler;
 	private Button armStayButton;
+	private boolean armStayButtonEnabled = false;
 	private Button armAwayButton;
+	private boolean armAwayButtonEnabled = false;
+	private Button disarmButton;
+	private boolean disarmButtonEnabled = false;
+	
+	private SharedPreferences sharedPrefs;
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -35,12 +43,16 @@ public class CommandTabFragment extends Fragment {
 		View view = inflater.inflate(R.layout.cmd_tab_fragment, container, false);
 		
 		armStayButton = (Button) view.findViewById(R.id.button_arm_stay);
-		//armStayButton.setEnabled(runCommandButtonEnabled);
+		armStayButton.setEnabled(armStayButtonEnabled);
 		armStayButton.setOnClickListener(new ArmStayButtonListener());
 		
 		armAwayButton = (Button) view.findViewById(R.id.button_arm_away);
-		//armStayButton.setEnabled(runCommandButtonEnabled);
+		armAwayButton.setEnabled(armStayButtonEnabled);
 		armAwayButton.setOnClickListener(new ArmAwayButtonListener());
+		
+		disarmButton = (Button) view.findViewById(R.id.button_disarm);
+		disarmButton.setEnabled(disarmButtonEnabled);
+		disarmButton.setOnClickListener(new DisarmButtonListener());
 		
 		return view;
     }
@@ -50,11 +62,28 @@ public class CommandTabFragment extends Fragment {
 		super.onAttach(activity);
 		
         try {
-            eventHandler = (EventHandler) activity;
+            eventHandler = (IEventHandler) activity;
+            sharedPrefs = activity.getSharedPreferences(Preferences.PREF_FILE, Preferences.MODE_PRIVATE);
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
         }
 	}
+	
+   public void notifySignedIn(boolean signedIn) {
+		armAwayButtonEnabled = signedIn;
+		armStayButtonEnabled = signedIn;
+		disarmButtonEnabled = signedIn;
+		
+    	if (armAwayButton != null) {
+    		armAwayButton.setEnabled(armAwayButtonEnabled);
+    	}
+    	if (armStayButton != null) {
+    		armStayButton.setEnabled(armStayButtonEnabled);
+    	}
+    	if (disarmButton != null) {
+    		disarmButton.setEnabled(disarmButtonEnabled);
+    	}
+    }
 	
 	private class ArmStayButtonListener implements OnClickListener {
 
@@ -70,6 +99,25 @@ public class CommandTabFragment extends Fragment {
 		}
 	}
 	
+	private class ArmStayThread extends AsyncTask<Void, Void, Void> {
+		
+		protected Void doInBackground(Void...args) {
+			
+			SecurityPanel panel = SecurityPanel.getSecurityPanel();
+			
+			eventHandler.processEvent(new Event("Arming Partition 1: Stay Mode", Event.LOGGING));
+	
+			try {
+				panel.partitionArmStay("1");
+				eventHandler.processEvent(new Event("Arming Partition 1: Stay Mode...Complete", Event.LOGGING));
+			}
+			catch (PanelException e) {
+				eventHandler.processEvent(new Event("Arming Partition 1: Stay Mode...Failed", e));
+			}
+			return null;
+		}
+	}
+
 	private class ArmAwayButtonListener implements OnClickListener {
 
 		public void onClick(View v) {
@@ -84,25 +132,6 @@ public class CommandTabFragment extends Fragment {
 		}
 	}
 	
-	private class ArmStayThread extends AsyncTask<Void, Void, Void> {
-		
-		protected Void doInBackground(Void...args) {
-			
-			SecurityPanel panel = SecurityPanel.getSecurityPanel();
-			
-			eventHandler.processEvent(new Event("Arming Partition 1: Stay Mode", Event.LOGGING));
-
-			try {
-				panel.partitionArmStay("1");
-				eventHandler.processEvent(new Event("Arming Partition 1: Stay Mode...Complete", Event.LOGGING));
-			}
-			catch (PanelException e) {
-				eventHandler.processEvent(new Event("Arming Partition 1: Stay Mode...Failed", e));
-			}
-			return null;
-		}
-	}
-
 	private class ArmAwayThread extends AsyncTask<Void, Void, Void> {
 		
 		protected Void doInBackground(Void...args) {
@@ -117,6 +146,39 @@ public class CommandTabFragment extends Fragment {
 			}
 			catch (PanelException e) {
 				eventHandler.processEvent(new Event("Arming Partition 1: Away Mode...Failed", e));
+			}
+			return null;
+		}
+	}
+	
+	private class DisarmButtonListener implements OnClickListener {
+
+		public void onClick(View v) {
+			
+			DisarmThread disarmThread = new DisarmThread();
+			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+				disarmThread.execute((Void[])null);
+		    } 
+		    else {
+		    	disarmThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+			}
+		}
+	}
+	
+	private class DisarmThread extends AsyncTask<Void, Void, Void> {
+		
+		protected Void doInBackground(Void...args) {
+			
+			SecurityPanel panel = SecurityPanel.getSecurityPanel();
+			
+			eventHandler.processEvent(new Event("Disarming Partition 1", Event.LOGGING));
+
+			try {
+				panel.partitionDisarm("1", sharedPrefs.getString(Preferences.USER_CODE, ""));
+				eventHandler.processEvent(new Event("Disarming Partition 1...Complete", Event.LOGGING));
+			}
+			catch (PanelException e) {
+				eventHandler.processEvent(new Event("Disarming Partition 1...Failed", e));
 			}
 			return null;
 		}

@@ -7,10 +7,12 @@ import android.preference.EditTextPreference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
+import android.text.method.PasswordTransformationMethod;
 
 public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 	
 	public static final String DEFAULT_PASSWORD = "123456";
+	public static final String DEFAULT_USER_CODE = "1234";
 	public static final String DEFAULT_TIMEOUT = "10000";
 	public static final String DEFAULT_PORT_NUMBER = "4025";
 	public static final String DEFAULT_SERVER_VALUE = "192.168.0.100";
@@ -19,12 +21,14 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	public static final String PORT = "port";
 	public static final String TIMEOUT = "timeout";
 	public static final String PASSWORD = "password";
+	public static final String USER_CODE = "usercode";
 
 	public static String PREF_FILE = "com.donn.homewatcher_preferences";
 	
 	private PreferenceScreen mainPreferenceScreen;
 	private PreferenceCategory signInCategory;
 	private EditTextPreference signInPassword;
+	private EditTextPreference userCode;
 	private PreferenceCategory serverCategory;
 	private EditTextPreference serverName;
 	private EditTextPreference serverPort;
@@ -74,11 +78,19 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		serverCategory.addPreference(serverTimeout);
 		
 		signInPassword = new EditTextPreference(this);
-		signInPassword.setTitle("Server password (1-6) chars)");
+		signInPassword.setTitle("Server password (1-6) chars");
 		signInPassword.setDefaultValue(DEFAULT_PASSWORD);
 		signInPassword.setKey(PASSWORD);
+		signInPassword.getEditText().setTransformationMethod(PasswordTransformationMethod.getInstance());
 
+		userCode = new EditTextPreference(this);
+		userCode.setTitle("User Code - 4 numbers");
+		userCode.setDefaultValue(DEFAULT_USER_CODE);
+		userCode.setKey(USER_CODE);
+		userCode.getEditText().setTransformationMethod(PasswordTransformationMethod.getInstance());
+		
 		signInCategory.addPreference(signInPassword);
+		signInCategory.addPreference(userCode);
 		
 		zonePreferences = new EditTextPreference[65];
 
@@ -105,7 +117,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		serverName.setSummary(serverName.getText());
 		serverPort.setSummary(serverPort.getText());
 		serverTimeout.setSummary(serverTimeout.getText());
-		signInPassword.setSummary(signInPassword.getText());
 
 		setPreferenceScreen(mainPreferenceScreen);
 	}
@@ -141,9 +152,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		}
 		else if (key.equalsIgnoreCase(TIMEOUT)) {
 			serverTimeout.setSummary(sharedPreferences.getString(key, ""));
-		}
-		else if (key.equalsIgnoreCase(PASSWORD)) {
-			signInPassword.setSummary(sharedPreferences.getString(key, ""));
 		}
 	}
 

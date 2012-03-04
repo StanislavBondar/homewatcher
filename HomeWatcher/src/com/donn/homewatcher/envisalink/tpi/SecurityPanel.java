@@ -141,6 +141,22 @@ public class SecurityPanel {
 		runCommand(command);
 	}
 	
+	public void partitionDisarm(String partition1to8, String userCode) throws PanelException {
+		if (partition1to8 == null || !partition1to8.matches("[1-8]")) {
+			throw new PanelException("partition1to8 must be a 1 character string from 1 to 8, it was: " + 
+					partition1to8);
+		}
+		if (userCode == null || !userCode.matches("[0-9]{4}?")) {
+			throw new PanelException("userCode must be 4 numbers with values from 0 to 9, it was: " + userCode);
+		}
+		
+		command = new Command();
+		command.setCommand("040");
+		command.setData(partition1to8 + "00" + userCode);
+			
+		runCommand(command);
+	}
+	
 	public void runRawCommand(String rawCommand) throws PanelException {
 		
 		try {
