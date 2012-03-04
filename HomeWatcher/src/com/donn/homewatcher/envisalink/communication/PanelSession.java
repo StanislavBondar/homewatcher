@@ -1,7 +1,6 @@
 package com.donn.homewatcher.envisalink.communication;
 
 import com.donn.homewatcher.envisalink.tpi.Command;
-import com.donn.homewatcher.envisalink.tpi.PanelTransaction;
 
 public class PanelSession {
 	
@@ -20,23 +19,16 @@ public class PanelSession {
 		return panelConnection.open(server, port, timeout);
 	}
 	
-	public String read() throws Exception {
+	public String read() throws PanelException {
 		return panelConnection.read();
 	}
 	
-	public boolean close() throws Exception {
+	public boolean close() throws PanelException {
 		return panelConnection.close();
 	}
 	
-	public PanelTransaction runCommand(Command panelCommand) throws Exception {
-		PanelTransaction panelTransaction = new PanelTransaction();
-		panelTransaction.setRequest(panelCommand);
-		
+	public void runCommand(Command panelCommand) throws PanelException {
 		panelConnection.write(panelCommand.toString());
-		
-		panelTransaction.setResponse("Socket Write Complete");
-		
-		return panelTransaction;
 	}
 
 }

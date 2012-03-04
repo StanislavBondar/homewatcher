@@ -91,15 +91,14 @@ public class LoggingTabFragment extends Fragment {
 			
 			SecurityPanel panel = SecurityPanel.getSecurityPanel();
 			
-			eventHandler.processEvent(new Event("Command being executed: " + command));
+			eventHandler.processEvent(new Event("Command being executed: " + command, Event.LOGGING));
 
 			try {
 				panel.runRawCommand(command);
-				eventHandler.processEvent(new Event("Command: " + command + " execute complete..."));
+				eventHandler.processEvent(new Event("Command: " + command + " execute complete...", Event.LOGGING));
 			}
 			catch (PanelException e) {
-				eventHandler.processEvent(new Event(e.getMessage()));
-				e.printStackTrace();
+				eventHandler.processEvent(new Event("Failed running raw command " + command, e));
 			}
 
 			return null;

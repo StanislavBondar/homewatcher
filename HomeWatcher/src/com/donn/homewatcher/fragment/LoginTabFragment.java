@@ -112,10 +112,9 @@ public class LoginTabFragment extends Fragment {
 			try {
 				boolean closed = SecurityPanel.getSecurityPanel().close();
 				eventHandler.setSignedIn(!closed);
-				eventHandler.processEvent(new Event("Panel was closed? " + closed));
+				eventHandler.processEvent(new Event("Panel was closed? " + closed, Event.LOGGING));
 			} catch (PanelException e) {
-				eventHandler.processEvent(new Event("Panel was not closed - due to error."));
-				e.printStackTrace();
+				eventHandler.processEvent(new Event("Panel was not closed - due to error.", e));
 			}
 			
 			connectAndReadThread.cancel(true);
@@ -137,28 +136,26 @@ public class LoginTabFragment extends Fragment {
 			boolean run = true;
 			String line = "";
 			
-			eventHandler.processEvent(new Event("Login/Socket Read Starting..."));
+			eventHandler.processEvent(new Event("Login/Socket Read Starting...", Event.LOGGING));
 
 			try {
-				eventHandler.processEvent(new Event("Panel was opened? " + panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout())));
-				eventHandler.processEvent(new Event(panel.networkLogin(signonDetails.getPassword())));
+				eventHandler.processEvent(new Event("Panel was opened? " + panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()), Event.LOGGING));
+				eventHandler.processEvent(new Event("Logging in to panel...", Event.LOGGING));
+				panel.networkLogin(signonDetails.getPassword());
 				
 				Event panelEvent;
 				while (run) {
 					
 						line = panel.read();
 						if (line != null) {
-							panelEvent = new Event();
-							panelEvent.setMessage(line);
-							panelEvent.setType(Event.PANEL_EVENT);
+							panelEvent = new Event(line, Event.PANEL);
 							eventHandler.processEvent(panelEvent);
 						}
 				}
-				eventHandler.processEvent(new Event("Login/Socket Read Ending..."));
+				eventHandler.processEvent(new Event("Login/Socket Read Ending...", Event.LOGGING));
 			}
 			catch (PanelException e) {
-				eventHandler.processEvent(new Event(e.getMessage()));
-				e.printStackTrace();
+				eventHandler.processEvent(new Event("Error reading from socket.", e));
 			}
 
 			return null;

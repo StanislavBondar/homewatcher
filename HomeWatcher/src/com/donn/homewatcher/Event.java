@@ -4,47 +4,68 @@ import com.donn.homewatcher.envisalink.tpi.TpiMessage;
 
 public class Event {
 	
-	public static String PANEL_EVENT = "PanelEvent";
-	public static String LOGGING_EVENT = "LoggingEvent";
-	
-	private String message;
-	private String eventType;
+	private static String PANEL_EVENT = "PanelEvent";
+	private static String LOGGING_EVENT = "LoggingEvent";
+	private static String ERROR_EVENT = "ErrorEvent";
+
+	public static EventType PANEL = new EventType(PANEL_EVENT);
+	public static EventType LOGGING = new EventType(LOGGING_EVENT);
+	public static EventType ERROR = new EventType(ERROR_EVENT);
+
+	private EventType eventType;
 	private TpiMessage tpiMessage;
+	private Exception exception = new Exception("No exception set for event.");
+	private String message = "No message set.";
 	
-	public Event() {
+	private static class EventType {
+		String eventTypeString;
 		
+		public EventType(String eventTypeString) {
+			this.eventTypeString = eventTypeString;
+		}
+		
+		public boolean equals(EventType eventType) {
+			return eventTypeString.equalsIgnoreCase(eventType.getString());
+		}
+		
+		public String getString() {
+			return eventTypeString;
+		}
 	}
 	
 	/*
 	 * Use constructor for simple events, logging messages only
 	 */
-	public Event(String messageString) {
+	public Event(String messageString, EventType eventType) {
 		this.message = messageString;
-		this.eventType = LOGGING_EVENT;
-	}
-
-	public void setMessage(String messageString) {
-		this.message = messageString;
-	}
-
-	public void setType(String eventType) {
 		this.eventType = eventType;
+	}
+	
+	public Event(String messageString, Exception e) {
+		this.message = messageString;
+		this.eventType = ERROR;
+		this.exception = e;
 	}
 
 	public String getMessage() {
-		return message;
+		if (eventType.equals(ERROR)) {
+			return exception.toString();
+		}
+		else {
+			return message;
+		}
 	}
-
-	public String getType() {
-		return eventType;
-	}
-
-	public void setTpiMessage(TpiMessage tpiMessage) {
-		this.tpiMessage = tpiMessage;
+	
+	public Exception getException() {
+		return exception;
 	}
 
 	public TpiMessage getTpiMessage() {
 		return tpiMessage;
 	}
-
+	
+	public boolean isOfType(EventType otherEventType) {
+		return eventType.equals(otherEventType);
+	}
+	
 }

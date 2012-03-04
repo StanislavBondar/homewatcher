@@ -148,9 +148,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         setButtons();
         
         if (savedInstanceState == null) {
-			processEvent(new Event("Starting HomeWatcher."));
-			processEvent(new Event("To Sign In, push 'Sign-In'..."));
-			processEvent(new Event("Or... if first time running app, set preferences first."));
+			processEvent(new Event("Starting HomeWatcher.", Event.LOGGING));
+			processEvent(new Event("To Sign In, push 'Sign-In'...", Event.LOGGING));
+			processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
         }
 
 	}
@@ -170,8 +170,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				startActivity(i);
 				preferencesSet = true;
 			} catch (Exception e) {
-				processEvent(new Event(e.getMessage()));
-				e.printStackTrace();
+				processEvent(new Event("Menu item selection error", e));
 			}
 		}
 	    return true;
@@ -268,15 +267,27 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			
 			try {
 				Log.d((String) getText(R.string.app_name), event.getMessage());
-				if (event.getType().equals(Event.LOGGING_EVENT)) {
+				if (event.isOfType(Event.LOGGING)) {
 					loggingFragment.addMessageToLog(event.getMessage());
 				}
-				if (event.getType().equals(Event.PANEL_EVENT)) {
+				else if (event.isOfType(Event.PANEL)) {
 					processServerMessage(event);
+				}
+				else if (event.isOfType(Event.ERROR)) {
+					String exceptionMessage = event.getException().toString();
+					
+					loggingFragment.addMessageToLog(exceptionMessage);
+					event.getException().printStackTrace();
+					
+					if (exceptionMessage.contains("ECONNRESET") || exceptionMessage.contains("EPIPE") || 
+							exceptionMessage.contains("ETIMEDOUT")) 
+					{
+						setSignedIn(false);
+					}
 				}
 			}
 			catch (Exception e) {
-				e.printStackTrace();
+				loggingFragment.addMessageToLog("Error Handling Message: " + e.getMessage());
 			}
 		}
 		
@@ -290,7 +301,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					try {
 						SecurityPanel.getSecurityPanel().close();
 					} catch (PanelException e) {
-						e.printStackTrace();
+						processEvent(new Event("Error processing message 505", e));
 					}
 				}
 				else if (tpiMessage.getGeneralData().equals("1")) {
@@ -299,10 +310,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				}
 			}
 			else if (tpiMessage.getCode() == 510) {
-				String data = tpiMessage.getGeneralData();
-				byte[] bytes = data.getBytes();
-				byte byte1 = bytes[0];
-				byte byte2 = bytes[1];
+				//TODO: Code for 510
 			}
 			
 			loggingFragment.addMessageToLog(tpiMessage.toString());

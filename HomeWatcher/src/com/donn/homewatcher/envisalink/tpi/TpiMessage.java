@@ -35,9 +35,17 @@ public class TpiMessage {
 	private void parseMessage() {
 		
 		if (fullMessage.length() > 3) {
-			//TODO: Check last two digits of checksum - verify instead of ignoring
-			fullMessage = fullMessage.substring(0, fullMessage.length() - 2);
-			code = Integer.parseInt(fullMessage.substring(0, 3));
+			
+			try {
+				//TODO: Check last two digits of checksum - verify instead of ignoring
+				fullMessage = fullMessage.substring(0, fullMessage.length() - 2);
+				code = Integer.parseInt(fullMessage.substring(0, 3));
+			}
+			catch (Exception e) {
+				fullMessage = "ERROR Processing Message: " + fullMessage;
+				e.printStackTrace();
+				code = 000;
+			}
 			
 			switch (code) {
 			

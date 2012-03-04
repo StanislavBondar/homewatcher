@@ -7,4 +7,10 @@
     <string name="runCommand">Run Command</string>
     <string name="login">This is the login fragment</string>
     
+    <string name="button_text_arm_away">Arm Away</string>
+    <string name="button_text_arm_stay">Arm Stay</string>
+    <string name="button_text_sign_in">Sign In</string>
+    <string name="button_text_sign_out">Sign Out</string>
+        
+    
 </resources>

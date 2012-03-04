@@ -16,16 +16,20 @@ public class PanelConnection {
 	private OutputStreamWriter out;
 	private BufferedReader in;
 	
-	public void write(String stringToWrite) throws Exception {
-		out.write(stringToWrite);
-		out.flush();
+	public void write(String stringToWrite) throws PanelException {
+		try {
+			out.write(stringToWrite);
+			out.flush();
+		} catch (Exception e) {
+			throw new PanelException(e, "Write to socket failed.");
+		}
 	}
 	
-	public String readLine() throws Exception {
+	private String readLine() throws Exception {
 		return in.readLine();
 	}
 
-	public String read() throws Exception {
+	public String read() throws PanelException {
 		String line = "";
 	
 		try {
@@ -34,16 +38,14 @@ public class PanelConnection {
 		}
 		catch (SocketException e) {
 			if (e.getMessage().equalsIgnoreCase("socket closed")) {
-				throw new PanelException("Socket closed... shutting down continuous read: " + e.getMessage());
+				throw new PanelException(e, "Socket closed... shutting down continuous read.");
 			}
 			else {
-				e.printStackTrace();
-				throw new PanelException(e, "Continuous read of socket in new thread failed: " + e.getMessage());
+				throw new PanelException(e, "Continuous read of socket in new thread failed.");
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
-			throw new PanelException(e, "Continuous read of socket in new thread failed: " + e.getMessage());
+			throw new PanelException(e, "Continuous read of socket in new thread failed.");
 		}
 	}
 	
@@ -56,23 +58,23 @@ public class PanelConnection {
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		}
 		catch (UnknownHostException e) {
-			throw new PanelException(e, "Could not open connection. Unknown Host: " + e.getMessage());
+			throw new PanelException(e, "Could not open connection. Unknown Host.");
 		}
 		catch (IOException e) {
-			throw new PanelException(e, "Could not open connection. IO Exception: " + e.getMessage());
+			throw new PanelException(e, "Could not open connection. IO Exception.");
 		}
 		
 		return true;
 	}
 	
-	public boolean close() throws Exception {
+	public boolean close() throws PanelException {
 		try {
 			socket.close();
 			out.close();
 			in.close();
 		}
 		catch (Exception e) {
-			throw new PanelException(e, "Could not close connection: " + e.getMessage());
+			throw new PanelException(e, "Could not close connection.");
 		}
 		return true;
 	}
