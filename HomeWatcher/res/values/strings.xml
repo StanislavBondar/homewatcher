@@ -3,6 +3,7 @@
 
     <string name="app_name">Home Watcher</string>
     <string name="action_bar_preferences">Prefs</string>
+    <string name="login_status">Login</string>
     <string name="commandDefault">001</string>
     <string name="runCommand">Run Command</string>
     <string name="login">This is the login fragment</string>

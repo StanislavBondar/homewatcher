@@ -25,7 +25,7 @@ import com.donn.homewatcher.envisalink.tpi.TpiMessage;
 import com.donn.homewatcher.fragment.CommandTabFragment;
 import com.donn.homewatcher.fragment.LoggingSubFragment;
 import com.donn.homewatcher.fragment.LoggingTabFragment;
-import com.donn.homewatcher.fragment.LoginTabFragment;
+import com.donn.homewatcher.fragment.LoginSubFragment;
 import com.donn.homewatcher.fragment.StatusTabFragment;
 
 /**
@@ -37,17 +37,19 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 	private static String LOGIN = "Login";
 	private static String STATUS = "Status";
-	private static String CMD = "Cmd";
+	private static String COMMAND = "Command";
 	private static String LOG = "Log";
 	private static String LOGGING = "Logging";
 	
 	private LoggingSubFragment loggingFragment;
-	private LoginTabFragment loginTabFragment;
+	private LoginSubFragment loginTabFragment;
 	private StatusTabFragment statusFragment;
 	private CommandTabFragment cmdFragment;
 	private LoggingTabFragment loggingTabFragment;
 	
 	private HashMap<String, Fragment[]> fragmentMap = new HashMap<String, Fragment[]>();
+	
+	private MenuItem signInMenuItem;
 	
 	private boolean signedIn = false;
 	private boolean preferencesSet = false;
@@ -72,21 +74,16 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
         ActionBar actionBar = getSupportActionBar();
         actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-        actionBar.setTitle("Home Watcher - 2DS");
         
-        Tab loginTab = actionBar.newTab();
-        loginTab.setText(LOGIN);
-        loginTab.setTag(LOGIN); 
-        loginTab.setTabListener(this);
+        //Fragment without UI, leave attached.
         if (savedInstanceState != null) {
-        	loginTabFragment = (LoginTabFragment) fm.getFragment(savedInstanceState, LOGIN);
+        	loginTabFragment = (LoginSubFragment) fm.getFragment(savedInstanceState, LOGIN);
         }
         if (loginTabFragment == null) {
-        	loginTabFragment = new LoginTabFragment();
+        	loginTabFragment = new LoginSubFragment();
         }
         fragmentMap.put(LOGIN, new Fragment[]{loginTabFragment});
         fm.beginTransaction().add(android.R.id.content, loginTabFragment, LOGIN).detach(loginTabFragment).commit();
-        actionBar.addTab(loginTab);
         
         Tab statusTab = actionBar.newTab();
         statusTab.setText(STATUS);
@@ -103,18 +100,18 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         getSupportFragmentManager().beginTransaction().add(android.R.id.content, statusFragment, STATUS).detach(statusFragment).commit();
         
         Tab cmdTab = actionBar.newTab();
-        cmdTab.setText(CMD);
-        cmdTab.setTag(CMD); 
+        cmdTab.setText(COMMAND);
+        cmdTab.setTag(COMMAND); 
         cmdTab.setTabListener(this);
         actionBar.addTab(cmdTab);
         if (savedInstanceState != null) {
-        	cmdFragment = (CommandTabFragment) fm.getFragment(savedInstanceState, CMD);
+        	cmdFragment = (CommandTabFragment) fm.getFragment(savedInstanceState, COMMAND);
         }
         if (cmdFragment == null) {
         	cmdFragment = new CommandTabFragment();
         }
-        fragmentMap.put(CMD, new Fragment[]{cmdFragment});
-        getSupportFragmentManager().beginTransaction().add(android.R.id.content, cmdFragment, CMD).detach(cmdFragment).commit();
+        fragmentMap.put(COMMAND, new Fragment[]{cmdFragment});
+        getSupportFragmentManager().beginTransaction().add(android.R.id.content, cmdFragment, COMMAND).detach(cmdFragment).commit();
         
         Tab logTab = actionBar.newTab();
         logTab.setText(LOG);
@@ -152,13 +149,17 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			processEvent(new Event("To Sign In, push 'Sign-In'...", Event.LOGGING));
 			processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
         }
-
+        
 	}
 	
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.actions, menu);
+		signInMenuItem = menu.getItem(0);
 		super.onCreateOptionsMenu(menu);
+		
+		setButtons();
+		
 		return true;
 	}
 
@@ -173,8 +174,13 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			} catch (Exception e) {
 				processEvent(new Event("Menu item selection error", e));
 			}
+			return true;
 		}
-	    return true;
+		if (item.getItemId() == R.id.sign_in_out) {
+			loginTabFragment.notifySignedIn(signedIn);
+		}
+		
+		return false;
 	}
 
 	@Override
@@ -228,9 +234,23 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
     private void setButtons() {
 
     	if (preferencesSet) {
-    		loginTabFragment.notifySignedIn(signedIn);
+        	statusFragment.notifySignedIn(signedIn);
     		loggingTabFragment.notifySignedIn(signedIn);
     		cmdFragment.notifySignedIn(signedIn);
+    		if (signInMenuItem != null) {
+    			signInMenuItem.setVisible(true);
+	            if (signedIn) {
+	            	signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
+	            }
+	            else {
+	            	signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
+	            }
+            }
+    	}
+    	else {
+    		if (signInMenuItem != null) {
+    			signInMenuItem.setVisible(false);
+    		}
     	}
 	}
     
@@ -299,7 +319,10 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				}
 			}
 			else if (tpiMessage.getCode() == 510) {
-				//TODO: Code for 510
+				statusFragment.notifyLEDStatus(tpiMessage);
+			}
+			else if (tpiMessage.getCode() == 511) {
+				statusFragment.notifyLEDFlashStatus(tpiMessage);
 			}
 			
 			loggingFragment.addMessageToLog(tpiMessage.toString());
@@ -334,5 +357,4 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			transaction.commit();
 		}
 	}
-
 }
