@@ -59,7 +59,7 @@ public class LoggingTabFragment extends Fragment implements ISignInAware {
         try {
             eventHandler = (IEventHandler) activity;
         } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
+            eventHandler.processEvent(new Event(activity.toString() + " must implement onActivityLogged", e));
         }
 	}
 

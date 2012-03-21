@@ -1,5 +1,7 @@
 package com.donn.homewatcher.fragment;
 
+import com.donn.homewatcher.Event;
+import com.donn.homewatcher.IEventHandler;
 import com.donn.homewatcher.R;
 import com.donn.homewatcher.envisalink.tpi.TpiMessage;
 
@@ -15,6 +17,7 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
@@ -22,13 +25,17 @@ import android.widget.AdapterView.OnItemClickListener;
 public class StatusTabFragment extends Fragment implements ISignInAware {
 	
 	//Currently not needed unless StatusTabFragment has messages to pass back to activity
-	//private EventHandler eventHandler;
+	private IEventHandler eventHandler;
 	
 	private TextView firstLoadTextView;
 	private GridView gridView;
 	private ImageAdapter imageAdapter;
+	private ProgressBar progressBar;
+	
+	private boolean ledUpdateInProgress = false;
 
 	private String ledStatusText = "00000000";
+	//TODO: add check for flashing LEDs
 	private String ledFlashText = "00000000";
 
 	private boolean firstTime = true;
@@ -57,6 +64,15 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 		imageAdapter = new ImageAdapter(getActivity());
 		gridView.setAdapter(imageAdapter);
 		gridView.setOnItemClickListener(imageAdapter);
+		
+		progressBar = (ProgressBar) view.findViewById(R.id.progress_large);
+		
+		if (ledUpdateInProgress) {
+			progressBar.setVisibility(View.VISIBLE);
+		}
+		else {
+			progressBar.setVisibility(View.INVISIBLE);
+		}
 
 		return view;
     }
@@ -66,10 +82,10 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 		super.onAttach(activity);
 		
         try {
-        	//Currently not needed unless CommandTabFragment has messages to pass back to activity
-            //eventHandler = (EventHandler) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
+        	eventHandler = (IEventHandler) activity;
+        } 
+        catch (ClassCastException e) {
+        	eventHandler.processEvent(new Event(activity.toString() + " must implement onActivityLogged", e));
         }
 	}
 
@@ -80,6 +96,29 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 			if (firstLoadTextView != null) {
 				firstLoadTextView.setVisibility(View.INVISIBLE);
 			}
+		}
+		else {
+			if (signedIn) {
+				gridView.setVisibility(View.VISIBLE);
+			}
+			else {
+				gridView.setVisibility(View.INVISIBLE);
+				ledStatusText = "00000000";
+				ledFlashText = "00000000";
+				imageAdapter = new ImageAdapter(getActivity());
+				gridView.setAdapter(imageAdapter);
+				gridView.setOnItemClickListener(imageAdapter);
+			}
+		}
+	}
+	
+	public void notifyLEDUpdateInProgress(boolean inProgress) {
+		ledUpdateInProgress = inProgress;
+		if (ledUpdateInProgress) {
+			progressBar.setVisibility(View.VISIBLE);
+		}
+		else {
+			progressBar.setVisibility(View.INVISIBLE);
 		}
 	}
 	
@@ -95,6 +134,9 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 			gridView.setAdapter(imageAdapter);
 			gridView.setOnItemClickListener(imageAdapter);
 		}
+		
+		ledUpdateInProgress = false;
+		progressBar.setVisibility(View.INVISIBLE);
 	}
 	
 	public void notifyLEDFlashStatus(TpiMessage tpiMessage) {
@@ -104,6 +146,9 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 		String value2 = convertToBinaryString(generalData.substring(1, 2));
 		
 		ledFlashText = value1 + value2;
+
+		//ledUpdateInProgress = false;
+		//progressBar.setVisibility(View.INVISIBLE);
 	}
 	
 	private String convertToBinaryString(String data) {
@@ -123,9 +168,9 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 	
 	private class ImageAdapter extends BaseAdapter implements OnItemClickListener {
 
-		private Integer[] images = { R.drawable.status_7backlight, R.drawable.status_6fire,  R.drawable.status_5program,
-									R.drawable.status_4trouble, R.drawable.status_3bypass, R.drawable.status_2memory,
-									R.drawable.status_1armed, R.drawable.status_0ready };
+		private Integer[] images = { R.drawable.status_0backlight, R.drawable.status_1fire,  R.drawable.status_2program,
+									R.drawable.status_3trouble, R.drawable.status_4bypass, R.drawable.status_5memory,
+									R.drawable.status_6armed, R.drawable.status_7ready };
 
 		private String[] imageStrings = { "Backlight", "Fire", "Program", "Trouble", "Bypass", "Memory", "Armed", "Ready"};  
 		

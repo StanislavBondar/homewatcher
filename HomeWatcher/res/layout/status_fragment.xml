@@ -2,18 +2,17 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_horizontal" >
+    android:gravity="center_horizontal"
+    android:orientation="vertical" >
 
-        <TextView 
-            android:id="@+id/text_first_load"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical|center_horizontal"
-            android:text="@string/first_load_text" />
-        
-         
-             <GridView
+    <TextView
+        android:id="@+id/text_first_load"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical|center_horizontal"
+        android:text="@string/first_load_text" />
+
+    <GridView
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/gridview"
         android:layout_width="wrap_content"
@@ -22,5 +21,11 @@
         android:numColumns="4"
         android:stretchMode="columnWidth" >
     </GridView>
-            
+
+    <ProgressBar
+        android:id="@+android:id/progress_large"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
 </LinearLayout>

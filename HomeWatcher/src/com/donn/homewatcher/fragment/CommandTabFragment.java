@@ -65,7 +65,7 @@ public class CommandTabFragment extends Fragment implements ISignInAware {
             eventHandler = (IEventHandler) activity;
             sharedPrefs = activity.getSharedPreferences(Preferences.PREF_FILE, Preferences.MODE_PRIVATE);
         } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString() + " must implement onActivityLogged");
+            eventHandler.processEvent(new Event(activity.toString() + " must implement onActivityLogged", e));
         }
 	}
 	
