@@ -1,0 +1,17 @@
+HomeWatcher Change Log:
+
+*2012-03-20:
+1. When logged in, hitting the back button and exiting the app 
+now explicitly signs off the user from the panel. This prevents 
+the user from returning to the app later, unable to log on
+because the socket is still open. If the user leaves the app 
+running, the connection will remain active, only when the 
+back button is hit is logout automatic.
+2. Yellow sign-on icon appears as user is logging in, but before 
+the system has confirmed the login. 
+3. Indeterminate progress bar appears when user is logging in.
+4. Indeterminate progress bar appears near the panel LEDs on 
+the Status tab when the LED information is being loaded after 
+signing on.
+5. Checksums on messages received back from the server are 
+now verified.
