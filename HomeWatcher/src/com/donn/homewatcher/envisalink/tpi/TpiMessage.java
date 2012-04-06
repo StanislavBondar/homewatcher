@@ -32,7 +32,7 @@ public class TpiMessage {
 	}
 	
 	/**
-	 * Based on EnvisalinkTPI-0-09.PDF - 02-17-2012
+	 * Based on EnvisalinkTPI-1-03.PDF - 04-06-2012
 	 */
 	private void parseMessage() {
 		
@@ -72,7 +72,7 @@ public class TpiMessage {
 				break;
 				
 			case 505:
-				englishDescription = "Login Response (success=1, fail=0)";
+				englishDescription = "Login Response (ok=0, fail=1, timeout=2, login=3)";
 				generalData = trimmedMessage.substring(3);
 				break;
 				

@@ -107,8 +107,12 @@ public class LoginSubFragment extends Fragment implements ISignInAware {
 						+ panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()),
 						Event.LOGGING));
 				eventHandler.processEvent(new Event("Logging in to panel...", Event.LOGGING));
-				panel.networkLogin(signonDetails.getPassword());
-				panel.statusReport();
+				
+				//Now called after a successful connect & password request prompt
+				//panel.networkLogin(signonDetails.getPassword());
+				
+				//Now called after a successful login event is received.
+				//panel.statusReport();
 
 				Event panelEvent;
 				while (run) {

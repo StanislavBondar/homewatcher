@@ -74,7 +74,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
 
 		// Means preferences were already set, don't need to force preference set again
-		if (sharedPrefs.contains("server")) {
+		if (sharedPrefs.contains(Preferences.SERVER)) {
 			preferencesSet = true;
 		}
 
@@ -331,9 +331,13 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			}
 		}
 
+		/*
+		 * Modified 505 handling to align with recent April 2012 changes to TPI API
+		 */
 		private void processServerMessage(Event panelEvent) {
 			TpiMessage tpiMessage = new TpiMessage(panelEvent, sharedPrefs);
 			if (tpiMessage.getCode() == 505) {
+				System.out.println("505 received: " + tpiMessage.getPanelEvent().getMessage());
 				if (tpiMessage.getGeneralData().equals("0")) {
 					loggingFragment.addMessageToLog("Login Failed... invalid credentials.");
 					setSignedIn(false);
@@ -348,7 +352,35 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				else if (tpiMessage.getGeneralData().equals("1")) {
 					loggingFragment.addMessageToLog("Login Successful, may now run commands.");
 					setSignedIn(true);
+					try {
+						loggingFragment.addMessageToLog("Login Successful, running intial status report.");
+						SecurityPanel.getSecurityPanel().statusReport();
+					}
+					catch (PanelException e) {
+						processEvent(new Event("Error running status report after successful login.", e));
+					}
 				}
+				else if (tpiMessage.getGeneralData().equals("2")) {
+					loggingFragment.addMessageToLog("Login Failed... panel timed out.");
+					setSignedIn(false);
+
+					try {
+						SecurityPanel.getSecurityPanel().close();
+					}
+					catch (PanelException e) {
+						processEvent(new Event("Error processing message 505", e));
+					}
+				}
+				else if (tpiMessage.getGeneralData().equals("3")) {
+					loggingFragment.addMessageToLog("Panel prompted for signon, may now login.");
+					try {
+						SecurityPanel.getSecurityPanel().networkLogin(sharedPrefs.getString(Preferences.PASSWORD, Preferences.DEFAULT_PASSWORD));
+					}
+					catch (PanelException e) {
+						processEvent(new Event("Error signing in with password after password prompt event from panel.", e));
+					}
+				}
+
 			}
 			else if (tpiMessage.getCode() == 510) {
 				statusFragment.notifyLEDStatus(tpiMessage);
