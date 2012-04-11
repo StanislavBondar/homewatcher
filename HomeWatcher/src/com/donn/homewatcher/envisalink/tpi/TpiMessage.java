@@ -40,7 +40,6 @@ public class TpiMessage {
 			verifyChecksum(originalMessage);
 			
 			if (originalMessage.length() > 3) {
-				//TODO: Check last two digits of checksum - verify instead of ignoring
 				trimmedMessage = originalMessage.substring(0, originalMessage.length() - 2);
 				checkSum = originalMessage.substring(originalMessage.length() - 2);
 				code = Integer.parseInt(trimmedMessage.substring(0, 3));
@@ -72,7 +71,7 @@ public class TpiMessage {
 				break;
 				
 			case 505:
-				englishDescription = "Login Response (ok=0, fail=1, timeout=2, login=3)";
+				englishDescription = "Login Interaction (fail=0, ok=1, timeout=2, login=3)";
 				generalData = trimmedMessage.substring(3);
 				break;
 				
@@ -181,6 +180,14 @@ public class TpiMessage {
 				
 			case 626:
 				englishDescription = "Panic Alarm Restoral";
+				break;
+			
+			case 631:
+				englishDescription = "2 Wire Smoke/Aux Alarm Activated";
+				break;
+			
+			case 632:
+				englishDescription = "2 Wire Smoke/Aux Alarm Restored";
 				break;
 				
 			case 650:
@@ -364,16 +371,6 @@ public class TpiMessage {
 				generalData = trimmedMessage.substring(3);
 				break;
 				
-			case 850:
-				englishDescription = "Partition Busy";
-				partition = Integer.parseInt(trimmedMessage.substring(3));
-				break;
-				
-			case 851:
-				englishDescription = "Partition Busy Restore";
-				partition = Integer.parseInt(trimmedMessage.substring(3));
-				break;
-				
 			case 900:
 				englishDescription = "Code Required";
 				break;
@@ -457,6 +454,10 @@ public class TpiMessage {
 	
 	public int getCode() {
 		return code;
+	}
+	
+	public String getChecksum() {
+		return checkSum;
 	}
 	
 	public Event getPanelEvent() {

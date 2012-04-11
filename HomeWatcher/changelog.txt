@@ -1,5 +1,12 @@
 HomeWatcher Change Log:
 
+*2012-04-11:
+1. Minor cleanup of code and 505 log message
+2. Updated TPIMessage codes based on 1-03 update
+
+*2012-04-06:
+1. Fixed code to align with changes to TPI API for 505 login events.
+
 *2012-03-20:
 1. When logged in, hitting the back button and exiting the app 
 now explicitly signs off the user from the panel. This prevents 
