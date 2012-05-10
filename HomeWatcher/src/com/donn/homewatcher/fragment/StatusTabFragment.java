@@ -98,16 +98,18 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 			}
 		}
 		else {
-			if (signedIn) {
-				gridView.setVisibility(View.VISIBLE);
-			}
-			else {
-				gridView.setVisibility(View.INVISIBLE);
-				ledStatusText = "00000000";
-				ledFlashText = "00000000";
-				imageAdapter = new ImageAdapter(getActivity());
-				gridView.setAdapter(imageAdapter);
-				gridView.setOnItemClickListener(imageAdapter);
+			if (gridView != null) {
+				if (signedIn) {
+					gridView.setVisibility(View.VISIBLE);
+				}
+				else {
+					gridView.setVisibility(View.INVISIBLE);
+					ledStatusText = "00000000";
+					ledFlashText = "00000000";
+					imageAdapter = new ImageAdapter(getActivity());
+					gridView.setAdapter(imageAdapter);
+					gridView.setOnItemClickListener(imageAdapter);
+				}
 			}
 		}
 	}

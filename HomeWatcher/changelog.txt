@@ -1,5 +1,8 @@
 HomeWatcher Change Log:
 
+*2012-05-10:
+1. Fixed null pointer app crash when reloading and gridview == null
+
 *2012-04-11:
 1. Minor cleanup of code and 505 log message
 2. Updated TPIMessage codes based on 1-03 update
