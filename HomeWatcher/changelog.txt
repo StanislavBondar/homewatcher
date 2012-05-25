@@ -1,6 +1,9 @@
 HomeWatcher Change Log:
 
 *2012-05-25:
+1. Made sure that vpnConnected status is saved in HomeWatcherActivity
+
+*2012-05-25:
 1. Added hooks into new app RootVPN to automatically start
 a VPN connection if set in the preferences. Must install and
 setup RootVPN before using this new feature. Root access is

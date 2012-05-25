@@ -59,6 +59,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 	private String SIGNED_IN_KEY = "SignedInKey";
 	private String PREFERENCES_SET_KEY = "PreferencesSetKey";
+	private String VPN_CONNECTED_KEY = "VPNConnectedKey";
 	private String TAB_KEY = "TabKey";
 
 	private SharedPreferences sharedPrefs;
@@ -159,6 +160,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			getSupportActionBar().setSelectedNavigationItem(savedInstanceState.getInt(TAB_KEY, 0));
 			signedIn = savedInstanceState.getBoolean(SIGNED_IN_KEY);
 			preferencesSet = savedInstanceState.getBoolean(PREFERENCES_SET_KEY);
+			vpnConnected = savedInstanceState.getBoolean(VPN_CONNECTED_KEY);
 		}
 
 		setButtons();
@@ -242,6 +244,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		outState.putInt(TAB_KEY, getSupportActionBar().getSelectedNavigationIndex());
 		outState.putBoolean(SIGNED_IN_KEY, signedIn);
 		outState.putBoolean(PREFERENCES_SET_KEY, preferencesSet);
+		outState.putBoolean(VPN_CONNECTED_KEY, vpnConnected);
 	}
 
 	protected void onDestroy() {
