@@ -1,5 +1,13 @@
 HomeWatcher Change Log:
 
+*2012-05-25:
+1. Added hooks into new app RootVPN to automatically start
+a VPN connection if set in the preferences. Must install and
+setup RootVPN before using this new feature. Root access is
+required to automatically start a VPN connection.
+2. HomeWatcher will now send and receive appropriate Intents
+for RootVPN to manage connection.
+
 *2012-05-10:
 1. Fixed null pointer app crash when reloading and gridview == null
 

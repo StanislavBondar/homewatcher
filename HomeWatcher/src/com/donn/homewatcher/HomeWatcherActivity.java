@@ -48,22 +48,33 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	private StatusTabFragment statusFragment;
 	private CommandTabFragment cmdFragment;
 	private LoggingTabFragment loggingTabFragment;
-
+	
 	private HashMap<String, Fragment[]> fragmentMap = new HashMap<String, Fragment[]>();
 
 	private MenuItem signInMenuItem;
 
 	private boolean signedIn = false;
 	private boolean preferencesSet = false;
+	private boolean vpnConnected = false;
 
 	private String SIGNED_IN_KEY = "SignedInKey";
 	private String PREFERENCES_SET_KEY = "PreferencesSetKey";
 	private String TAB_KEY = "TabKey";
 
 	private SharedPreferences sharedPrefs;
-
+	
+	private static HomeWatcherActivity myActivity;
+	
+	public static IEventHandler getEventHandler() {
+		return (IEventHandler) myActivity;
+	}
+	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		if (myActivity == null) {
+			myActivity = this;
+		}
 		
         // Request for the progress bar to be shown in the title
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -80,7 +91,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 		ActionBar actionBar = getSupportActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-
+		
 		// Fragment without UI, leave attached.
 		if (savedInstanceState != null) {
 			loginTabFragment = (LoginSubFragment) fm.getFragment(savedInstanceState, LOGIN);
@@ -271,6 +282,14 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		message.obj = event;
 		messageHandler.sendMessage(message);
 	}
+	
+	public boolean isVPNConnected() {
+		return vpnConnected;
+	}
+	
+	public void sendBroadcastIntent(String intentActionString) {
+		sendBroadcast(new Intent(intentActionString));
+	}
 
 	@Override
 	protected void onUserLeaveHint() {
@@ -323,6 +342,14 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
 						statusFragment.notifyLEDUpdateInProgress(true);
 						setProgressBarIndeterminateVisibility(true);
+					}
+				}
+				else if (event.isOfType(Event.VPN)) {
+					if (event.getMessage().equals(VPNListener.CONNECTED_INTENT)) {
+						vpnConnected = true;
+					}
+					else if (event.getMessage().equals(VPNListener.DISCONNECTED_INTENT)) {
+						vpnConnected = false;
 					}
 				}
 			}

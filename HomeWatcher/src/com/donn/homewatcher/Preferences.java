@@ -3,6 +3,7 @@ package com.donn.homewatcher;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
@@ -17,6 +18,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	public static final String DEFAULT_PORT_NUMBER = "4025";
 	public static final String DEFAULT_SERVER_VALUE = "192.168.0.100";
 	public static final String ZONE_PREFIX = "z";
+	public static final String USEROOTVPN = "userootvpn";
 	public static final String SERVER = "server";
 	public static final String PORT = "port";
 	public static final String TIMEOUT = "timeout";
@@ -30,6 +32,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	private EditTextPreference signInPassword;
 	private EditTextPreference userCode;
 	private PreferenceCategory serverCategory;
+	private CheckBoxPreference useRootVPN;
 	private EditTextPreference serverName;
 	private EditTextPreference serverPort;
 	private EditTextPreference serverTimeout;
@@ -58,6 +61,12 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		mainPreferenceScreen.addPreference(signInCategory);
 		mainPreferenceScreen.addPreference(zoneCategory);
 		
+		useRootVPN = new CheckBoxPreference(this);
+		useRootVPN.setTitle("Use RootVPN?");
+		useRootVPN.setDefaultValue(new Boolean(false));
+		useRootVPN.setKey(USEROOTVPN);
+		useRootVPN.setSummary("Connect to VPN network first via RootVPN.");
+		
 		serverName = new EditTextPreference(this);
 		serverName.setTitle("Server Name");
 		serverName.setDefaultValue(DEFAULT_SERVER_VALUE);
@@ -73,6 +82,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		serverTimeout.setDefaultValue(DEFAULT_TIMEOUT);
 		serverTimeout.setKey(TIMEOUT);
 		
+		serverCategory.addPreference(useRootVPN);
 		serverCategory.addPreference(serverName);
 		serverCategory.addPreference(serverPort);
 		serverCategory.addPreference(serverTimeout);

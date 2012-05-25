@@ -11,6 +11,7 @@ import com.donn.homewatcher.Event;
 import com.donn.homewatcher.IEventHandler;
 import com.donn.homewatcher.Preferences;
 import com.donn.homewatcher.SignonDetails;
+import com.donn.homewatcher.VPNListener;
 import com.donn.homewatcher.envisalink.communication.PanelException;
 import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
 
@@ -60,10 +61,11 @@ public class LoginSubFragment extends Fragment implements ISignInAware {
 		int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, ""));
 		int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, ""));
 		String password = sharedPrefs.getString(Preferences.PASSWORD, "");
-
+		boolean useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
+		
 		SignonDetails signonDetails = new SignonDetails(server, port, timeout, password);
 
-		connectAndReadThread = new ConnectAndReadThread(signonDetails);
+		connectAndReadThread = new ConnectAndReadThread(signonDetails, useRootVPN);
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 			connectAndReadThread.execute((Void[]) null);
 		}
@@ -73,6 +75,8 @@ public class LoginSubFragment extends Fragment implements ISignInAware {
 	}
 
 	private void signOff() {
+		boolean useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
+		
 		try {
 			boolean closed = SecurityPanel.getSecurityPanel().close();
 			eventHandler.setSignedIn(!closed);
@@ -81,16 +85,37 @@ public class LoginSubFragment extends Fragment implements ISignInAware {
 		catch (PanelException e) {
 			eventHandler.processEvent(new Event("Panel was not closed - due to error.", e));
 		}
+		
+		if (useRootVPN) {
+			if (!disconnectFromVPN()) {
+				eventHandler.processEvent(new Event("Could not disconnect from VPN", Event.ERROR));
+			}
+			else {
+				eventHandler.processEvent(new Event("Successfully disconnected from VPN", Event.LOGGING));
+			}
+		}
 
 		connectAndReadThread.cancel(true);
+	}
+	
+	//TODO: not sure we'll disconnect quickly enough to know we've disconnected in time
+	private boolean disconnectFromVPN() {
+		eventHandler.sendBroadcastIntent(VPNListener.OFF_INTENT);
+		
+		if (!eventHandler.isVPNConnected()) {
+			return true;
+		}
+		return false;
 	}
 
 	private class ConnectAndReadThread extends AsyncTask<Void, Void, Void> {
 
 		private SignonDetails signonDetails;
+		private boolean useRootVPN;
 
-		public ConnectAndReadThread(SignonDetails signonDetails) {
+		public ConnectAndReadThread(SignonDetails signonDetails, boolean useRootVPN) {
 			this.signonDetails = signonDetails;
+			this.useRootVPN = useRootVPN;
 		}
 
 		protected Void doInBackground(Void... args) {
@@ -101,7 +126,17 @@ public class LoginSubFragment extends Fragment implements ISignInAware {
 			String line = "";
 
 			eventHandler.processEvent(new Event("Login/Socket Read Starting...", Event.LOGGING));
-
+			
+			if (useRootVPN && !eventHandler.isVPNConnected()) {
+				if (!connectToVPN()) {
+					eventHandler.processEvent(new Event("Could not connect to VPN", new Exception("Failed to connect to VPN")));
+					return null;
+				}
+				else {
+					eventHandler.processEvent(new Event("Successfully connected to VPN", Event.LOGGING));
+				}
+			}
+			
 			try {
 				eventHandler.processEvent(new Event("Panel was opened? "
 						+ panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout()),
@@ -130,6 +165,28 @@ public class LoginSubFragment extends Fragment implements ISignInAware {
 			}
 
 			return null;
+		}
+		
+		private boolean connectToVPN() {
+			eventHandler.sendBroadcastIntent(VPNListener.ON_INTENT);
+			
+			for (int i = 0; i < 30; i++) {
+				sleep(1);
+				if (eventHandler.isVPNConnected()) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		private void sleep(int seconds) {
+			try {
+				Thread.sleep(seconds * 1000);
+			}
+			catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 	}

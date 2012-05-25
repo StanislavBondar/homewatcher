@@ -48,7 +48,7 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 	}
     
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {        
-    	// Inflate the layout for this fragment
+		// Inflate the layout for this fragment
 		View view = inflater.inflate(R.layout.status_fragment, container, false);
 		
 		firstLoadTextView = (TextView) view.findViewById(R.id.text_first_load);

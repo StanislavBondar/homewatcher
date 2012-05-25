@@ -8,11 +8,13 @@ public class Event {
 	private static String LOGGING_EVENT = "LoggingEvent";
 	private static String ERROR_EVENT = "ErrorEvent";
 	private static String USER_EVENT = "UserEvent";
+	private static String VPN_EVENT = "VPNEvent";
 	
 	public static EventType PANEL = new EventType(PANEL_EVENT);
 	public static EventType LOGGING = new EventType(LOGGING_EVENT);
 	public static EventType ERROR = new EventType(ERROR_EVENT);
 	public static EventType USER = new EventType(USER_EVENT);
+	public static EventType VPN = new EventType(VPN_EVENT);
 
 	public static String USER_EVENT_LOGIN = "UserLogin";
 
