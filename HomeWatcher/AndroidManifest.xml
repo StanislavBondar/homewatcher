@@ -15,7 +15,7 @@
         
         <activity
             android:label="@string/app_name"
-            android:name="com.donn.homewatcher.HomeWatcherActivity" 
+            android:name="HomeWatcherActivity" 
             android:windowSoftInputMode="stateHidden"
             android:theme="@style/Theme.Sherlock">
             <intent-filter >
@@ -24,14 +24,26 @@
             </intent-filter>
     	 </activity>
     	 
-        <activity android:name=".Preferences" android:label="@string/app_name"/>
+        <activity android:name="Preferences" android:label="@string/app_name"/>
     
-        <receiver android:name="VPNListener">
+        <receiver android:name=".vpn.VPNListener">
             <intent-filter>
                 <action android:name="com.donn.rootvpn.CONNECTED" />
                 <action android:name="com.donn.rootvpn.DISCONNECTED" />
             </intent-filter>
         </receiver>
+        
+        <receiver android:name=".widget.HomeWatcherWidget" android:label="@string/widget_name" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.donn.homewatcher.widget.UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider" android:resource="@xml/widget" />
+        </receiver>
+        
+        <service android:name="HomeWatcherService" />
+        <service android:name=".widget.HomeWatcherWidgetService" />
         
     </application>
 

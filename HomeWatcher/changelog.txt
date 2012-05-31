@@ -1,5 +1,8 @@
 HomeWatcher Change Log:
 
+*2012-05-31:
+1. Refactoring underway - non-working version
+
 *2012-05-25:
 1. Made sure that vpnConnected status is saved in HomeWatcherActivity
 

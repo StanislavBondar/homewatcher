@@ -3,10 +3,16 @@ package com.donn.homewatcher;
 import java.util.Collection;
 import java.util.HashMap;
 
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.app.ActionBar;
 import android.support.v4.app.ActionBar.Tab;
@@ -14,19 +20,18 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.Menu;
 import android.support.v4.view.MenuItem;
 import android.util.Log;
 import android.view.MenuInflater;
 import android.view.Window;
 
-import com.donn.homewatcher.envisalink.communication.PanelException;
-import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
+import com.donn.homewatcher.HomeWatcherService.LocalBinder;
 import com.donn.homewatcher.envisalink.tpi.TpiMessage;
 import com.donn.homewatcher.fragment.CommandTabFragment;
 import com.donn.homewatcher.fragment.LoggingSubFragment;
 import com.donn.homewatcher.fragment.LoggingTabFragment;
-import com.donn.homewatcher.fragment.LoginSubFragment;
 import com.donn.homewatcher.fragment.StatusTabFragment;
 
 /**
@@ -37,14 +42,12 @@ import com.donn.homewatcher.fragment.StatusTabFragment;
  */
 public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, IEventHandler {
 
-	private static String LOGIN = "Login";
 	private static String STATUS = "Status";
 	private static String COMMAND = "Command";
 	private static String LOG = "Log";
 	private static String LOGGING = "Logging";
 
 	private LoggingSubFragment loggingFragment;
-	private LoginSubFragment loginTabFragment;
 	private StatusTabFragment statusFragment;
 	private CommandTabFragment cmdFragment;
 	private LoggingTabFragment loggingTabFragment;
@@ -53,29 +56,44 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 	private MenuItem signInMenuItem;
 
-	private boolean signedIn = false;
-	private boolean preferencesSet = false;
-	private boolean vpnConnected = false;
-
-	private String SIGNED_IN_KEY = "SignedInKey";
-	private String PREFERENCES_SET_KEY = "PreferencesSetKey";
-	private String VPN_CONNECTED_KEY = "VPNConnectedKey";
 	private String TAB_KEY = "TabKey";
 
 	private SharedPreferences sharedPrefs;
 	
-	private static HomeWatcherActivity myActivity;
+	private HomeWatcherService homeWatcherService;
+	private boolean mBound = false;
 	
-	public static IEventHandler getEventHandler() {
-		return (IEventHandler) myActivity;
-	}
+    /** Defines callbacks for service binding, passed to bindService() */    
+	private ServiceConnection mConnection = new ServiceConnection() {        
+		@Override        
+		public void onServiceConnected(ComponentName className, IBinder service) {            
+			// We've bound to LocalService, cast the IBinder and get LocalService instance            
+			LocalBinder binder = (LocalBinder) service;            
+			homeWatcherService = binder.getService();         
+			mBound = true;        
+			
+			processEvent(new Event("Starting HomeWatcher.", Event.LOGGING));
+			processEvent(new Event("To Sign In, push 'Sign-In'...", Event.LOGGING));
+			processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
+
+			setButtons();
+		}        
+		@Override        
+		public void onServiceDisconnected(ComponentName arg0) {            
+			mBound = false;        
+		}    
+	};
 	
+    private BroadcastReceiver receiver = new BroadcastReceiver() {          
+    	@Override         
+    	public void onReceive(Context context, Intent intent) {             
+    		Event event = (Event) intent.getParcelableExtra("EVENT");
+    		processEvent(event);
+    	}     
+    };
+    
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		if (myActivity == null) {
-			myActivity = this;
-		}
 		
         // Request for the progress bar to be shown in the title
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -85,24 +103,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 		sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
 
-		// Means preferences were already set, don't need to force preference set again
-		if (sharedPrefs.contains(Preferences.SERVER)) {
-			preferencesSet = true;
-		}
-
 		ActionBar actionBar = getSupportActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 		
-		// Fragment without UI, leave attached.
-		if (savedInstanceState != null) {
-			loginTabFragment = (LoginSubFragment) fm.getFragment(savedInstanceState, LOGIN);
-		}
-		if (loginTabFragment == null) {
-			loginTabFragment = new LoginSubFragment();
-		}
-		fragmentMap.put(LOGIN, new Fragment[] { loginTabFragment });
-		fm.beginTransaction().add(android.R.id.content, loginTabFragment, LOGIN).detach(loginTabFragment).commit();
-
 		Tab statusTab = actionBar.newTab();
 		statusTab.setText(STATUS);
 		statusTab.setTag(STATUS);
@@ -158,27 +161,23 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 		if (savedInstanceState != null) {
 			getSupportActionBar().setSelectedNavigationItem(savedInstanceState.getInt(TAB_KEY, 0));
-			signedIn = savedInstanceState.getBoolean(SIGNED_IN_KEY);
-			preferencesSet = savedInstanceState.getBoolean(PREFERENCES_SET_KEY);
-			vpnConnected = savedInstanceState.getBoolean(VPN_CONNECTED_KEY);
 		}
-
-		setButtons();
-
-		if (savedInstanceState == null) {
-			processEvent(new Event("Starting HomeWatcher.", Event.LOGGING));
-			processEvent(new Event("To Sign In, push 'Sign-In'...", Event.LOGGING));
-			processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
-		}
-
+		
+		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter("com.donn.homewatcher.EVENT"));
+		//registerReceiver(receiver, new IntentFilter("com.donn.homewatcher.EVENT"));
+		bindService(new Intent(this, HomeWatcherService.class), mConnection, BIND_AUTO_CREATE);
 	}
 
+	@Override
+	protected void onStart() {
+		super.onStart();
+	}
+	
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.actions, menu);
 		signInMenuItem = menu.getItem(0);
 		super.onCreateOptionsMenu(menu);
-
 		setButtons();
 
 		return true;
@@ -190,8 +189,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			try {
 				Intent i = new Intent(HomeWatcherActivity.this, Preferences.class);
 				startActivity(i);
-				preferencesSet = true;
-				setButtons();
 			}
 			catch (Exception e) {
 				processEvent(new Event("Menu item selection error", e));
@@ -199,7 +196,12 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			return true;
 		}
 		if (item.getItemId() == R.id.sign_in_out) {
-			loginTabFragment.notifySignedIn(signedIn);
+			if (homeWatcherService.isSignedIn()) {
+				homeWatcherService.signIn();
+			}
+			else {
+				homeWatcherService.signOut();
+			}
 		}
 
 		return false;
@@ -208,7 +210,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	@Override
 	protected void onResume() {
 		super.onResume();
-
+		
 		// Since onTabSelected is not called when rotating or when turning
 		// screen off, manually attach
 		String currentTabTag = getSupportActionBar().getTabAt(getSupportActionBar().getSelectedNavigationIndex())
@@ -219,6 +221,8 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			transaction.attach(fragment);
 		}
 		transaction.commit();
+		
+		setButtons();
 	}
 
 	protected void onSaveInstanceState(Bundle outState) {
@@ -242,58 +246,52 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 		super.onSaveInstanceState(outState);
 		outState.putInt(TAB_KEY, getSupportActionBar().getSelectedNavigationIndex());
-		outState.putBoolean(SIGNED_IN_KEY, signedIn);
-		outState.putBoolean(PREFERENCES_SET_KEY, preferencesSet);
-		outState.putBoolean(VPN_CONNECTED_KEY, vpnConnected);
 	}
 
 	protected void onDestroy() {
 		super.onDestroy();
+		
+		LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
+		
+		if (mBound) {
+			unbindService(mConnection);
+			mBound = false;
+		}
 	}
 
 	private void setButtons() {
 
-		if (preferencesSet) {
-			statusFragment.notifySignedIn(signedIn);
-			loggingTabFragment.notifySignedIn(signedIn);
-			cmdFragment.notifySignedIn(signedIn);
-			if (signInMenuItem != null) {
-				signInMenuItem.setVisible(true);
-				if (signedIn) {
-					signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
+		if (homeWatcherService != null) {
+			if (homeWatcherService.isPreferencesSet()) {
+				statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
+				loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
+				cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
+				if (signInMenuItem != null) {
+					signInMenuItem.setVisible(true);
+					if (homeWatcherService.isSignedIn()) {
+						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
+					}
+					else {
+						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
+					}
 				}
-				else {
-					signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
+				setProgressBarIndeterminateVisibility(false);
+			}
+			else {
+				if (signInMenuItem != null) {
+					signInMenuItem.setVisible(false);
 				}
 			}
-			setProgressBarIndeterminateVisibility(false);
 		}
-		else {
-			if (signInMenuItem != null) {
-				signInMenuItem.setVisible(false);
-			}
-		}
-	}
-
-	public void setSignedIn(boolean signedIn) {
-		this.signedIn = signedIn;
-		setButtons();
 	}
 
 	public void processEvent(Event event) {
 		Message message = Message.obtain();
 		message.obj = event;
 		messageHandler.sendMessage(message);
+		setButtons();
 	}
 	
-	public boolean isVPNConnected() {
-		return vpnConnected;
-	}
-	
-	public void sendBroadcastIntent(String intentActionString) {
-		sendBroadcast(new Intent(intentActionString));
-	}
-
 	@Override
 	protected void onUserLeaveHint() {
 		super.onUserLeaveHint();
@@ -303,12 +301,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	public void onBackPressed() {
 		super.onBackPressed();
 
-		try {
-			SecurityPanel.getSecurityPanel().close();
-		}
-		catch (PanelException e) {
-			processEvent(new Event("User hit the back button. App attempted logout", e));
-		}
+		homeWatcherService.signOut();
 	}
 
 	Handler messageHandler = new Handler() {
@@ -324,17 +317,15 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					processServerMessage(event);
 				}
 				else if (event.isOfType(Event.ERROR)) {
-					String exceptionMessage = event.getException().toString();
+					String exceptionMessage = event.getExceptionString();
 
 					loggingFragment.addMessageToLog(exceptionMessage);
-					event.getException().printStackTrace();
 
 					if (exceptionMessage.contains("ECONNRESET") 
 							|| exceptionMessage.contains("EPIPE")
 							|| exceptionMessage.contains("ETIMEDOUT") 
 							|| exceptionMessage.contains("failed to connect"))	
 					{
-						setSignedIn(false);
 						statusFragment.notifyLEDUpdateInProgress(false);
 					}
 				}
@@ -345,14 +336,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
 						statusFragment.notifyLEDUpdateInProgress(true);
 						setProgressBarIndeterminateVisibility(true);
-					}
-				}
-				else if (event.isOfType(Event.VPN)) {
-					if (event.getMessage().equals(VPNListener.CONNECTED_INTENT)) {
-						vpnConnected = true;
-					}
-					else if (event.getMessage().equals(VPNListener.DISCONNECTED_INTENT)) {
-						vpnConnected = false;
 					}
 				}
 			}
@@ -367,48 +350,19 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		private void processServerMessage(Event panelEvent) {
 			TpiMessage tpiMessage = new TpiMessage(panelEvent, sharedPrefs);
 			if (tpiMessage.getCode() == 505) {
-				System.out.println("505 received: " + tpiMessage.getPanelEvent().getMessage());
+				loggingFragment.addMessageToLog("505 received: " + tpiMessage.getPanelEvent().getMessage());
 				if (tpiMessage.getGeneralData().equals("0")) {
 					loggingFragment.addMessageToLog("Login Failed... invalid credentials.");
-					setSignedIn(false);
-
-					try {
-						SecurityPanel.getSecurityPanel().close();
-					}
-					catch (PanelException e) {
-						processEvent(new Event("Error processing message 505", e));
-					}
 				}
 				else if (tpiMessage.getGeneralData().equals("1")) {
 					loggingFragment.addMessageToLog("Login Successful, may now run commands.");
-					setSignedIn(true);
-					try {
-						loggingFragment.addMessageToLog("Login Successful, running intial status report.");
-						SecurityPanel.getSecurityPanel().statusReport();
-					}
-					catch (PanelException e) {
-						processEvent(new Event("Error running status report after successful login.", e));
-					}
+					loggingFragment.addMessageToLog("Login Successful, running intial status report.");
 				}
 				else if (tpiMessage.getGeneralData().equals("2")) {
 					loggingFragment.addMessageToLog("Login Failed... panel timed out.");
-					setSignedIn(false);
-
-					try {
-						SecurityPanel.getSecurityPanel().close();
-					}
-					catch (PanelException e) {
-						processEvent(new Event("Error processing message 505", e));
-					}
 				}
 				else if (tpiMessage.getGeneralData().equals("3")) {
 					loggingFragment.addMessageToLog("Panel prompted for signon, may now login.");
-					try {
-						SecurityPanel.getSecurityPanel().networkLogin(sharedPrefs.getString(Preferences.PASSWORD, Preferences.DEFAULT_PASSWORD));
-					}
-					catch (PanelException e) {
-						processEvent(new Event("Error signing in with password after password prompt event from panel.", e));
-					}
 				}
 
 			}
