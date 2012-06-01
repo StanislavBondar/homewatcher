@@ -40,7 +40,7 @@ import com.donn.homewatcher.fragment.StatusTabFragment;
  * @author Donn
  * 
  */
-public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener, IEventHandler {
+public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener {
 
 	private static String STATUS = "Status";
 	private static String COMMAND = "Command";
@@ -91,6 +91,10 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
     		processEvent(event);
     	}     
     };
+    
+    public HomeWatcherService getHomeWatcherService() {
+    	return homeWatcherService;
+    }
     
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -165,6 +169,8 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter("com.donn.homewatcher.EVENT"));
 		//registerReceiver(receiver, new IntentFilter("com.donn.homewatcher.EVENT"));
+		
+		startService(new Intent(this, HomeWatcherService.class));
 		bindService(new Intent(this, HomeWatcherService.class), mConnection, BIND_AUTO_CREATE);
 	}
 
@@ -196,7 +202,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			return true;
 		}
 		if (item.getItemId() == R.id.sign_in_out) {
-			if (homeWatcherService.isSignedIn()) {
+			if (!homeWatcherService.isSignedIn()) {
 				homeWatcherService.signIn();
 			}
 			else {
@@ -295,6 +301,8 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	@Override
 	protected void onUserLeaveHint() {
 		super.onUserLeaveHint();
+		
+		stopService(new Intent(this, HomeWatcherService.class));
 	}
 
 	@Override
@@ -302,6 +310,8 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		super.onBackPressed();
 
 		homeWatcherService.signOut();
+		
+		stopService(new Intent(this, HomeWatcherService.class));
 	}
 
 	Handler messageHandler = new Handler() {

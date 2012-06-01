@@ -1,6 +1,11 @@
 HomeWatcher Change Log:
 
 *2012-05-31:
+1. Basic refactoring to use service instead of directing all calls 
+through Activity complete and working. Needs much more cleanup and
+tuning.
+
+*2012-05-31:
 1. Refactoring underway - non-working version
 
 *2012-05-25:

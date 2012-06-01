@@ -1,7 +1,5 @@
 package com.donn.homewatcher.fragment;
 
-import com.donn.homewatcher.Event;
-import com.donn.homewatcher.IEventHandler;
 import com.donn.homewatcher.R;
 import com.donn.homewatcher.envisalink.tpi.TpiMessage;
 
@@ -23,9 +21,6 @@ import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class StatusTabFragment extends Fragment implements ISignInAware {
-	
-	//Currently not needed unless StatusTabFragment has messages to pass back to activity
-	private IEventHandler eventHandler;
 	
 	private TextView firstLoadTextView;
 	private GridView gridView;
@@ -80,13 +75,6 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 	@Override
 	public void onAttach(SupportActivity activity) {
 		super.onAttach(activity);
-		
-        try {
-        	eventHandler = (IEventHandler) activity;
-        } 
-        catch (ClassCastException e) {
-        	eventHandler.processEvent(new Event(activity.toString() + " must implement onActivityLogged", e));
-        }
 	}
 
 	@Override

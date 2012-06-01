@@ -89,7 +89,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		
 		signInPassword = new EditTextPreference(this);
 		signInPassword.setTitle("Server password (1-6) chars");
-		signInPassword.setDefaultValue(DEFAULT_PASSWORD);
+		//signInPassword.setDefaultValue(DEFAULT_PASSWORD);
 		signInPassword.setKey(PASSWORD);
 		signInPassword.getEditText().setTransformationMethod(PasswordTransformationMethod.getInstance());
 

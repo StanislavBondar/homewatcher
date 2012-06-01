@@ -30,7 +30,6 @@ public class HomeWatcherService extends Service {
 	private SharedPreferences sharedPrefs;
 	private boolean isSignedIn = false;
 	private boolean isVPNConnected = false;
-	private boolean isPreferencesSet = false;
 	private ConnectAndReadThread connectAndReadThread;
 	
     // Binder given to clients    
@@ -51,6 +50,7 @@ public class HomeWatcherService extends Service {
 	public IBinder onBind(Intent intent) {
 		localBroadcastManager = LocalBroadcastManager.getInstance(this);
 		sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
+
 		return mBinder;
 	}
 	
@@ -91,7 +91,7 @@ public class HomeWatcherService extends Service {
     };
 	
 	public boolean isPreferencesSet() {
-		return isPreferencesSet;
+		return sharedPrefs.contains(Preferences.PASSWORD);
 	}
 	
 	public boolean isSignedIn() {
@@ -357,4 +357,140 @@ public class HomeWatcherService extends Service {
 
 	}
 	
+	public void armStay() {
+		
+		ArmStayThread armStayThread = new ArmStayThread();
+		
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+			armStayThread.execute((Void[])null);
+	    } 
+	    else {
+	    	armStayThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+		}
+		
+	}
+
+	public void armAway() {
+		
+		ArmAwayThread armAwayThread = new ArmAwayThread();
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+			armAwayThread.execute((Void[])null);
+	    } 
+	    else {
+	    	armAwayThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+		}
+		
+	}
+
+	public void armDisarm() {
+		
+		DisarmThread disarmThread = new DisarmThread();
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+			disarmThread.execute((Void[])null);
+	    } 
+	    else {
+	    	disarmThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+		}
+		
+	}
+
+	private class ArmStayThread extends AsyncTask<Void, Void, Void> {
+		
+		protected Void doInBackground(Void...args) {
+			
+			SecurityPanel panel = SecurityPanel.getSecurityPanel();
+			
+			publishEvent(new Event("Arming Partition 1: Stay Mode", Event.LOGGING));
+
+			try {
+				panel.partitionArmStay("1");
+				publishEvent(new Event("Arming Partition 1: Stay Mode...Complete", Event.LOGGING));
+			}
+			catch (PanelException e) {
+				publishEvent(new Event("Arming Partition 1: Stay Mode...Failed", e));
+			}
+			return null;
+		}
+	}
+
+	private class ArmAwayThread extends AsyncTask<Void, Void, Void> {
+		
+		protected Void doInBackground(Void...args) {
+			
+			SecurityPanel panel = SecurityPanel.getSecurityPanel();
+			
+			publishEvent(new Event("Arming Partition 1: Away Mode", Event.LOGGING));
+
+			try {
+				panel.partitionArmAway("1");
+				publishEvent(new Event("Arming Partition 1: Away Mode...Complete", Event.LOGGING));
+			}
+			catch (PanelException e) {
+				publishEvent(new Event("Arming Partition 1: Away Mode...Failed", e));
+			}
+			return null;
+		}
+	}
+
+	private class DisarmThread extends AsyncTask<Void, Void, Void> {
+		
+		protected Void doInBackground(Void...args) {
+			
+			SecurityPanel panel = SecurityPanel.getSecurityPanel();
+			
+			publishEvent(new Event("Disarming Partition 1", Event.LOGGING));
+
+			try {
+				panel.partitionDisarm("1", sharedPrefs.getString(Preferences.USER_CODE, ""));
+				publishEvent(new Event("Disarming Partition 1...Complete", Event.LOGGING));
+			}
+			catch (PanelException e) {
+				publishEvent(new Event("Disarming Partition 1...Failed", e));
+			}
+			return null;
+		}
+	}
+	
+	public void runCommand(String command) {
+	
+		RunCommandThread runCommandThread = new RunCommandThread(command);
+	    
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+	        runCommandThread.execute((Void[])null);
+	    } 
+	    else {
+			runCommandThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+		}
+	}
+		
+		
+	private class RunCommandThread extends AsyncTask<Void, Void, Void> {
+
+		private String command;
+		
+		public RunCommandThread(String command) {
+			this.command = command;
+		}
+		
+		protected Void doInBackground(Void...args) {
+			
+			SecurityPanel panel = SecurityPanel.getSecurityPanel();
+			
+			publishEvent(new Event("Command being executed: " + command, Event.LOGGING));
+
+			try {
+				panel.runRawCommand(command);
+				publishEvent(new Event("Command: " + command + " execute complete...", Event.LOGGING));
+			}
+			catch (PanelException e) {
+				publishEvent(new Event("Failed running raw command " + command, e));
+			}
+
+			return null;
+		}
+
+	}
+	
 }
+
+

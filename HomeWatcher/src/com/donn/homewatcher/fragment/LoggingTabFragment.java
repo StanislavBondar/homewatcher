@@ -1,13 +1,9 @@
 package com.donn.homewatcher.fragment;
 
 import com.donn.homewatcher.Event;
-import com.donn.homewatcher.IEventHandler;
+import com.donn.homewatcher.HomeWatcherActivity;
 import com.donn.homewatcher.R;
-import com.donn.homewatcher.envisalink.communication.PanelException;
-import com.donn.homewatcher.envisalink.tpi.SecurityPanel;
 
-import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.SupportActivity;
@@ -22,9 +18,8 @@ public class LoggingTabFragment extends Fragment implements ISignInAware {
 	
 	private Button runCommandButton;
 	private boolean runCommandButtonEnabled;
-	private RunCommandThread runCommandThread;
 	
-	private IEventHandler eventHandler;
+	private HomeWatcherActivity eventHandler;
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -57,7 +52,7 @@ public class LoggingTabFragment extends Fragment implements ISignInAware {
 		super.onAttach(activity);
 		
         try {
-            eventHandler = (IEventHandler) activity;
+            eventHandler = (HomeWatcherActivity) activity;
         } catch (ClassCastException e) {
             eventHandler.processEvent(new Event(activity.toString() + " must implement onActivityLogged", e));
         }
@@ -68,42 +63,10 @@ public class LoggingTabFragment extends Fragment implements ISignInAware {
 		public void onClick(View v) {
 			EditText editText = (EditText) getView().findViewById(R.id.edit_command_to_run);
 			String command = editText.getText().toString();
-			runCommandThread = new RunCommandThread(command);
-		    
-			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-		        runCommandThread.execute((Void[])null);
-		    } 
-		    else {
-				runCommandThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-			}
+			eventHandler.getHomeWatcherService().runCommand(command);
 		}
 	}
 	
-	private class RunCommandThread extends AsyncTask<Void, Void, Void> {
 
-		private String command;
-		
-		public RunCommandThread(String command) {
-			this.command = command;
-		}
-		
-		protected Void doInBackground(Void...args) {
-			
-			SecurityPanel panel = SecurityPanel.getSecurityPanel();
-			
-			eventHandler.processEvent(new Event("Command being executed: " + command, Event.LOGGING));
-
-			try {
-				panel.runRawCommand(command);
-				eventHandler.processEvent(new Event("Command: " + command + " execute complete...", Event.LOGGING));
-			}
-			catch (PanelException e) {
-				eventHandler.processEvent(new Event("Failed running raw command " + command, e));
-			}
-
-			return null;
-		}
-
-	}
 
 }
