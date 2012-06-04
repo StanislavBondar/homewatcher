@@ -18,4 +18,6 @@
     
     <string name="widget_name">HomeWatcher</string>
     
+    <string name="widget_text">Unknown</string>
+    
 </resources>

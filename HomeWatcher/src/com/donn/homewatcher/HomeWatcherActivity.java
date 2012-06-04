@@ -377,10 +377,10 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 			}
 			else if (tpiMessage.getCode() == 510) {
-				statusFragment.notifyLEDStatus(tpiMessage);
+				statusFragment.notifyLEDStatus(homeWatcherService.getLEDStatusText());
 			}
 			else if (tpiMessage.getCode() == 511) {
-				statusFragment.notifyLEDFlashStatus(tpiMessage);
+				statusFragment.notifyLEDFlashStatus(homeWatcherService.getLEDFlashStatusText());
 			}
 
 			loggingFragment.addMessageToLog(tpiMessage.toString());

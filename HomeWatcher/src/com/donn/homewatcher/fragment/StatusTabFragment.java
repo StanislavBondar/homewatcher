@@ -1,7 +1,6 @@
 package com.donn.homewatcher.fragment;
 
 import com.donn.homewatcher.R;
-import com.donn.homewatcher.envisalink.tpi.TpiMessage;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -112,12 +111,8 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 		}
 	}
 	
-	public void notifyLEDStatus(TpiMessage tpiMessage) {
-		String generalData = tpiMessage.getGeneralData();
-
-		String value1 = convertToBinaryString(generalData.substring(0, 1));
-		String value2 = convertToBinaryString(generalData.substring(1, 2));
-		ledStatusText = value1 + value2;
+	public void notifyLEDStatus(String ledStatusText) {
+		this.ledStatusText = ledStatusText;
 		
 		if (gridView != null) {
 			imageAdapter = new ImageAdapter(getActivity());
@@ -129,31 +124,8 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 		progressBar.setVisibility(View.INVISIBLE);
 	}
 	
-	public void notifyLEDFlashStatus(TpiMessage tpiMessage) {
-		String generalData = tpiMessage.getGeneralData();
-
-		String value1 = convertToBinaryString(generalData.substring(0, 1));
-		String value2 = convertToBinaryString(generalData.substring(1, 2));
-		
-		ledFlashText = value1 + value2;
-
-		//ledUpdateInProgress = false;
-		//progressBar.setVisibility(View.INVISIBLE);
-	}
-	
-	private String convertToBinaryString(String data) {
-		String value1 = Integer.toBinaryString(Integer.parseInt(data, 16));
-		if (value1.length() == 1) {
-			value1 = "000" + value1;
-		}
-		else if (value1.length() == 2) {
-			value1 = "00" + value1;
-		}
-		else if (value1.length() == 3) {
-			value1 = "0" + value1;
-		}
-		
-		return value1;
+	public void notifyLEDFlashStatus(String ledFlashText) {
+		this.ledFlashText = ledFlashText;
 	}
 	
 	private class ImageAdapter extends BaseAdapter implements OnItemClickListener {

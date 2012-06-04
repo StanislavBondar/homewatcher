@@ -10,6 +10,8 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.io.InputStreamReader;
 
+import android.util.Log;
+
 public class PanelConnection {
 
 	private Socket socket = null;
@@ -49,7 +51,7 @@ public class PanelConnection {
 		}
 	}
 	
-	boolean open(String server, int port, int timeout) throws PanelException {
+	public void open(String server, int port, int timeout) throws PanelException {
 		try {
 			socket = new Socket();
 			SocketAddress socketAddress = new InetSocketAddress(server, port);
@@ -63,11 +65,9 @@ public class PanelConnection {
 		catch (IOException e) {
 			throw new PanelException(e, "Could not open connection. IO Exception.");
 		}
-		
-		return true;
 	}
 	
-	public boolean close() throws PanelException {
+	public void close() throws PanelException {
 		try {
 			socket.close();
 			out.close();
@@ -76,7 +76,6 @@ public class PanelConnection {
 		catch (Exception e) {
 			throw new PanelException(e, "Could not close connection.");
 		}
-		return true;
 	}
 	
 }

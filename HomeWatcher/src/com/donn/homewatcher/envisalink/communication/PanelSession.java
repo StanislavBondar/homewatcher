@@ -15,16 +15,16 @@ public class PanelSession {
 		return panelSession;
 	}
 	
-	public boolean open(String server, int port, int timeout) throws PanelException {
-		return panelConnection.open(server, port, timeout);
+	public void open(String server, int port, int timeout) throws PanelException {
+		panelConnection.open(server, port, timeout);
 	}
 	
 	public String read() throws PanelException {
 		return panelConnection.read();
 	}
 	
-	public boolean close() throws PanelException {
-		return panelConnection.close();
+	public void close() throws PanelException {
+		panelConnection.close();
 	}
 	
 	public void runCommand(Command panelCommand) throws PanelException {

@@ -29,13 +29,13 @@ public class SecurityPanel {
 		return panelSession.read();
 	}
 	
-	public boolean open(String server, int port, int timeout) throws PanelException {
-		return panelSession.open(server, port, timeout);
+	public void open(String server, int port, int timeout) throws PanelException {
+		panelSession.open(server, port, timeout);
 	}
 
 	
-	public boolean close() throws PanelException {
-		return panelSession.close();
+	public void close() throws PanelException {
+		panelSession.close();
 	}
 	
 	public void poll() throws PanelException {
