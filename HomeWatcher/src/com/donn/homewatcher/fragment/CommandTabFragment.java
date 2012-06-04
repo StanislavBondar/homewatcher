@@ -52,11 +52,7 @@ public class CommandTabFragment extends Fragment implements ISignInAware {
 	public void onAttach(SupportActivity activity) {
 		super.onAttach(activity);
 		
-        try {
-            eventHandler = (HomeWatcherActivity) activity;
-        } catch (ClassCastException e) {
-           //TODO: Say something?
-        }
+        eventHandler = (HomeWatcherActivity) activity;
 	}
 	
    public void notifySignedIn(boolean signedIn) {

@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -28,7 +27,6 @@ import android.view.MenuInflater;
 import android.view.Window;
 
 import com.donn.homewatcher.HomeWatcherService.LocalBinder;
-import com.donn.homewatcher.envisalink.tpi.TpiMessage;
 import com.donn.homewatcher.fragment.CommandTabFragment;
 import com.donn.homewatcher.fragment.LoggingSubFragment;
 import com.donn.homewatcher.fragment.LoggingTabFragment;
@@ -52,14 +50,14 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	private CommandTabFragment cmdFragment;
 	private LoggingTabFragment loggingTabFragment;
 	
+	private boolean firstTime = true;
+	
 	private HashMap<String, Fragment[]> fragmentMap = new HashMap<String, Fragment[]>();
 
 	private MenuItem signInMenuItem;
 
 	private String TAB_KEY = "TabKey";
 
-	private SharedPreferences sharedPrefs;
-	
 	private HomeWatcherService homeWatcherService;
 	private boolean mBound = false;
 	
@@ -72,9 +70,12 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			homeWatcherService = binder.getService();         
 			mBound = true;        
 			
-			processEvent(new Event("Starting HomeWatcher.", Event.LOGGING));
-			processEvent(new Event("To Sign In, push 'Sign-In'...", Event.LOGGING));
-			processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
+			if (firstTime) {
+				processEvent(new Event("Starting HomeWatcher.", Event.LOGGING));
+				processEvent(new Event("To Sign In, push 'Sign-In'...", Event.LOGGING));
+				processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
+				firstTime = false;
+			}
 
 			setButtons();
 		}        
@@ -85,6 +86,8 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	};
 	
     private BroadcastReceiver receiver = new BroadcastReceiver() {          
+    	//TODO: which events should Activity receive? Not Panel events!
+    	
     	@Override         
     	public void onReceive(Context context, Intent intent) {             
     		Event event = (Event) intent.getParcelableExtra("EVENT");
@@ -104,8 +107,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
         setProgressBarIndeterminateVisibility(false);
 		
 		FragmentManager fm = getSupportFragmentManager();
-
-		sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
 
 		ActionBar actionBar = getSupportActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
@@ -170,6 +171,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter("com.donn.homewatcher.EVENT"));
 		//registerReceiver(receiver, new IntentFilter("com.donn.homewatcher.EVENT"));
 		
+		//TODO: Make sure service is being unbound by both activity and widget
 		startService(new Intent(this, HomeWatcherService.class));
 		bindService(new Intent(this, HomeWatcherService.class), mConnection, BIND_AUTO_CREATE);
 	}
@@ -269,18 +271,24 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 		if (homeWatcherService != null) {
 			if (homeWatcherService.isPreferencesSet()) {
+				
 				statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
 				loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
 				cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
+				
 				if (signInMenuItem != null) {
 					signInMenuItem.setVisible(true);
-					if (homeWatcherService.isSignedIn()) {
+					if (homeWatcherService.isSignedIn() && homeWatcherService.isRefreshPending()) {
+						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
+					}
+					else if (homeWatcherService.isSignedIn()) {
 						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
 					}
 					else {
 						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
 					}
 				}
+				
 				setProgressBarIndeterminateVisibility(false);
 			}
 			else {
@@ -295,7 +303,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		Message message = Message.obtain();
 		message.obj = event;
 		messageHandler.sendMessage(message);
-		setButtons();
 	}
 	
 	@Override
@@ -323,9 +330,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				if (event.isOfType(Event.LOGGING)) {
 					loggingFragment.addMessageToLog(event.getMessage());
 				}
-				else if (event.isOfType(Event.PANEL)) {
-					processServerMessage(event);
-				}
 				else if (event.isOfType(Event.ERROR)) {
 					String exceptionMessage = event.getExceptionString();
 
@@ -338,52 +342,36 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					{
 						statusFragment.notifyLEDUpdateInProgress(false);
 					}
+					
+					setButtons();
 				}
 				else if (event.isOfType(Event.USER)) {
-					if (event.getMessage().equals(Event.USER_EVENT_LOGIN)) {
-						// As soon as we are notified the user is signing in, change icon.
-						// The panel event indicating sign-on is complete will change icon again.
-						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
-						statusFragment.notifyLEDUpdateInProgress(true);
+					if (event.getMessage().equals(Event.USER_EVENT_LOGIN_START)) {
 						setProgressBarIndeterminateVisibility(true);
 					}
+					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_SUCCESS)) {
+						//When the Activity successfully connects, it should refresh status to allow buttons and
+						//icons to update in the app for the first time.
+						homeWatcherService.refreshStatus();
+						statusFragment.notifyLEDUpdateInProgress(true);
+					}
+					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_SUCCESS)) {
+						//When the Activity successfully connects, it should refresh status to allow buttons and
+						//icons to update in the app for the first time.
+						homeWatcherService.refreshStatus();
+						statusFragment.notifyLEDUpdateInProgress(true);
+					}
+					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_SUCCESS)) {
+						statusFragment.notifyLEDStatus(homeWatcherService.getLEDStatusText());
+						statusFragment.notifyLEDFlashStatus(homeWatcherService.getLEDFlashStatusText());
+					}
+					
+					setButtons();
 				}
 			}
 			catch (Exception e) {
 				loggingFragment.addMessageToLog("Error Handling Message: " + e.getMessage());
 			}
-		}
-
-		/*
-		 * Modified 505 handling to align with recent April 2012 changes to TPI API
-		 */
-		private void processServerMessage(Event panelEvent) {
-			TpiMessage tpiMessage = new TpiMessage(panelEvent, sharedPrefs);
-			if (tpiMessage.getCode() == 505) {
-				loggingFragment.addMessageToLog("505 received: " + tpiMessage.getPanelEvent().getMessage());
-				if (tpiMessage.getGeneralData().equals("0")) {
-					loggingFragment.addMessageToLog("Login Failed... invalid credentials.");
-				}
-				else if (tpiMessage.getGeneralData().equals("1")) {
-					loggingFragment.addMessageToLog("Login Successful, may now run commands.");
-					loggingFragment.addMessageToLog("Login Successful, running intial status report.");
-				}
-				else if (tpiMessage.getGeneralData().equals("2")) {
-					loggingFragment.addMessageToLog("Login Failed... panel timed out.");
-				}
-				else if (tpiMessage.getGeneralData().equals("3")) {
-					loggingFragment.addMessageToLog("Panel prompted for signon, may now login.");
-				}
-
-			}
-			else if (tpiMessage.getCode() == 510) {
-				statusFragment.notifyLEDStatus(homeWatcherService.getLEDStatusText());
-			}
-			else if (tpiMessage.getCode() == 511) {
-				statusFragment.notifyLEDFlashStatus(homeWatcherService.getLEDFlashStatusText());
-			}
-
-			loggingFragment.addMessageToLog(tpiMessage.toString());
 		}
 	};
 

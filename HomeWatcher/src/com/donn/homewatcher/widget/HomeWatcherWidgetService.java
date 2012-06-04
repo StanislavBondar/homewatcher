@@ -1,6 +1,5 @@
 package com.donn.homewatcher.widget;
 
-import java.security.acl.LastOwnerException;
 import java.util.Calendar;
 
 import com.donn.homewatcher.HomeWatcherActivity;
@@ -192,13 +191,6 @@ public class HomeWatcherWidgetService extends Service {
 					updateViews.setTextViewText(R.id.widgetText, "Unknown");
 				}
 				
-				Intent defineIntent = new Intent(getApplicationContext(), HomeWatcherActivity.class);
-			 	defineIntent.setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-		        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, defineIntent, 0);
-		        updateViews.setOnClickPendingIntent(R.id.widget, pendingIntent);
-
-				manager.updateAppWidget(thisWidget, updateViews);
-				
 				if (!wasSignedInBeforeWidgetUpdate) {
 					homeWatcherService.signOut();
 				}
@@ -206,6 +198,13 @@ public class HomeWatcherWidgetService extends Service {
 			else {
 				Log.d((String) getText(R.string.app_name), "HomeWatcherService is null, nothing updated.");
 			}
+			
+			Intent defineIntent = new Intent(getApplicationContext(), HomeWatcherActivity.class);
+		 	defineIntent.setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+	        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, defineIntent, 0);
+	        updateViews.setOnClickPendingIntent(R.id.widget, pendingIntent);
+
+			manager.updateAppWidget(thisWidget, updateViews);
 		}
 	}
 	

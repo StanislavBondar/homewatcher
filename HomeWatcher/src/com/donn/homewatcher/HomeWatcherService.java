@@ -33,17 +33,11 @@ public class HomeWatcherService extends Service {
 	private LocalBroadcastManager localBroadcastManager; 
 	private SharedPreferences sharedPrefs;
 	private boolean isSignedIn = false;
+	private boolean isRefreshPending = false;
 	private boolean isVPNConnected = false;
 	private String ledStatusText = "00000000";
 	private String ledFlashStatusText = "00000000";
 	private Calendar ledStatusLastUpdated;
-	
-	private String server;
-	private int port;
-	private int timeout;
-	private String password;
-	private boolean useRootVPN;
-	private SignonDetails signonDetails;
 	
     // Binder given to clients    
 	private final IBinder mBinder = new LocalBinder();
@@ -101,15 +95,8 @@ public class HomeWatcherService extends Service {
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, intentFilter);
 		
 		sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
-		server = sharedPrefs.getString(Preferences.SERVER, "");
-		port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, ""));
-		timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, ""));
-		password = sharedPrefs.getString(Preferences.PASSWORD, "");
-		useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
 		
-		signonDetails = new SignonDetails(server, port, timeout, password);
-		
-		//Make it look like calendar status was never updated
+		//Make it look like led status was never updated
 		ledStatusLastUpdated = Calendar.getInstance();
 		ledStatusLastUpdated.set(Calendar.YEAR, 1970);
 	}
@@ -134,16 +121,30 @@ public class HomeWatcherService extends Service {
 		return sharedPrefs.contains(Preferences.PASSWORD);
 	}
 	
+	public boolean isRefreshPending() {
+		return isRefreshPending;
+	}
+	
 	public boolean isVPNConnected() {
 		return isVPNConnected;
 	}
 	
+	private SignonDetails getSignOnDetails() {
+		String server = sharedPrefs.getString(Preferences.SERVER, "preference.not.set");
+		int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, "1111"));
+		int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, "30"));
+		String password = sharedPrefs.getString(Preferences.PASSWORD, "passwordnotset");
+		
+		return new SignonDetails(server, port, timeout, password);
+	}
+	
 	public void signIn() {
-		publishEvent(new Event(Event.USER_EVENT_LOGIN, Event.USER));
+		publishEvent(new Event(Event.USER_EVENT_LOGIN_START, Event.USER));
 		
 		if (!isSignedIn) {
 			
-			SignOnThread signOnThread = new SignOnThread(signonDetails, useRootVPN);
+			SignOnThread signOnThread = new SignOnThread();
+			
 			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 				signOnThread.execute((Void[]) null);
 			}
@@ -155,6 +156,7 @@ public class HomeWatcherService extends Service {
 			
 		}
 		else {
+			publishEvent(new Event(Event.USER_EVENT_LOGIN_SUCCESS, Event.USER));
 			publishEvent(new Event("Already Signed In - Not Signing In Again", Event.LOGGING));
 		}
 	}
@@ -184,6 +186,9 @@ public class HomeWatcherService extends Service {
 	}
 	
 	public void refreshStatus() {
+		publishEvent(new Event(Event.USER_EVENT_REFRESH_START, Event.USER));
+		isRefreshPending = true;
+		
 		try {
 			SecurityPanel.getSecurityPanel().statusReport();
 		}
@@ -330,33 +335,18 @@ public class HomeWatcherService extends Service {
 
 	public void processEvent(Event event) {
 		try {
-			Log.d((String) getText(R.string.app_name), event.getMessage());
-			if (event.isOfType(Event.LOGGING)) {
-				//loggingFragment.addMessageToLog(event.getMessage());
-			}
-			else if (event.isOfType(Event.PANEL)) {
+			if (event.isOfType(Event.PANEL)) {
 				processServerMessage(event);
 			}
 			else if (event.isOfType(Event.ERROR)) {
 				String exceptionMessage = event.getExceptionString();
-
-				//loggingFragment.addMessageToLog(exceptionMessage);
 
 				if (exceptionMessage.contains("ECONNRESET") 
 						|| exceptionMessage.contains("EPIPE")
 						|| exceptionMessage.contains("ETIMEDOUT") 
 						|| exceptionMessage.contains("failed to connect"))	
 				{
-					setSignedIn(false);
-				}
-			}
-			else if (event.isOfType(Event.USER)) {
-				if (event.getMessage().equals(Event.USER_EVENT_LOGIN)) {
-					// As soon as we are notified the user is signing in, change icon.
-					// The panel event indicating sign-on is complete will change icon again.
-					//signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
-					//statusFragment.notifyLEDUpdateInProgress(true);
-					//setProgressBarIndeterminateVisibility(true);
+					signOut();
 				}
 			}
 		}
@@ -371,20 +361,26 @@ public class HomeWatcherService extends Service {
 	private void processServerMessage(Event panelEvent) {
 		TpiMessage tpiMessage = new TpiMessage(panelEvent, sharedPrefs);
 		if (tpiMessage.getCode() == 505) {
+			publishEvent(new Event("505 received: " + tpiMessage.getPanelEvent().getMessage(), Event.LOGGING));
 			//loggingFragment.addMessageToLog("505 received: " + tpiMessage.getPanelEvent().getMessage());
 			if (tpiMessage.getGeneralData().equals("0")) {
 				//invalid credentials
 				setSignedIn(false);
+				publishEvent(new Event(Event.USER_EVENT_LOGIN_FAIL, Event.USER));
+				publishEvent(new Event("Login Failed... invalid credentials.", Event.LOGGING));
 				signOut();
 			}
 			else if (tpiMessage.getGeneralData().equals("1")) {
 				//sign on successful
-				refreshStatus();
 				setSignedIn(true);
+				publishEvent(new Event(Event.USER_EVENT_LOGIN_SUCCESS, Event.USER));
+				publishEvent(new Event("Login Successful, may now run commands.", Event.LOGGING));
 			}
 			else if (tpiMessage.getGeneralData().equals("2")) {
 				//sign on unsuccessful
 				setSignedIn(false);
+				publishEvent(new Event(Event.USER_EVENT_LOGIN_FAIL, Event.USER));
+				publishEvent(new Event("Login Successful, may now run commands.", Event.LOGGING));
 				signOut();
 			}
 			else if (tpiMessage.getGeneralData().equals("3")) {
@@ -395,17 +391,21 @@ public class HomeWatcherService extends Service {
 				catch (PanelException e) {
 					processEvent(new Event("Error signing in with password after password prompt event from panel.", e));
 				}
+				publishEvent(new Event("Panel prompted for signon, may now login.", Event.LOGGING));
 			}
-
 		}
 		else if (tpiMessage.getCode() == 510) {
 			setLEDStatus(tpiMessage);
+			isRefreshPending = false;
+			publishEvent(new Event(Event.USER_EVENT_REFRESH_SUCCESS, Event.USER));
 		}
 		else if (tpiMessage.getCode() == 511) {
 			setLEDFlashStatus(tpiMessage);
+			isRefreshPending = false;
+			publishEvent(new Event(Event.USER_EVENT_REFRESH_SUCCESS, Event.USER));
 		}
 
-		//loggingFragment.addMessageToLog(tpiMessage.toString());
+		publishEvent(new Event("TPI: " + tpiMessage.toString(), Event.LOGGING));
 	}
 	
 	private class SignOnThread extends AsyncTask<Void, Void, Void> {
@@ -413,12 +413,10 @@ public class HomeWatcherService extends Service {
 		private SignonDetails signonDetails;
 		private boolean useRootVPN;
 
-		public SignOnThread(SignonDetails signonDetails, boolean useRootVPN) {
-			this.signonDetails = signonDetails;
-			this.useRootVPN = useRootVPN;
-		}
-
 		protected Void doInBackground(Void... args) { 
+			
+			signonDetails = getSignOnDetails(); 
+			useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
 
 			SecurityPanel panel = SecurityPanel.getSecurityPanel();
 
@@ -441,6 +439,7 @@ public class HomeWatcherService extends Service {
 			}
 			catch (PanelException e) {
 				publishEvent(new Event("Error reading from socket.", e));
+				publishEvent(new Event(Event.USER_EVENT_LOGIN_FAIL, Event.USER));
 			}
 
 			return null;

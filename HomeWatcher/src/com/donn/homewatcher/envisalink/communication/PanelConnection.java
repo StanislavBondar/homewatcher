@@ -10,8 +10,6 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.io.InputStreamReader;
 
-import android.util.Log;
-
 public class PanelConnection {
 
 	private Socket socket = null;

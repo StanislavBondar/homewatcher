@@ -17,7 +17,12 @@ public class Event implements Parcelable {
 	public static EventType USER = new EventType(USER_EVENT);
 	public static EventType VPN = new EventType(VPN_EVENT);
 
-	public static String USER_EVENT_LOGIN = "UserLogin";
+	public static String USER_EVENT_LOGIN_START = "UserLoginStart";
+	public static String USER_EVENT_LOGIN_SUCCESS = "UserLoginSuccess";
+	public static String USER_EVENT_LOGIN_FAIL = "UserLoginFail";
+	public static String USER_EVENT_LOGOUT = "UserLogout";
+	public static String USER_EVENT_REFRESH_START = "UserLogout";
+	public static String USER_EVENT_REFRESH_SUCCESS = "UserLogout";
 
 	private String message = "No message set."; 
 	private String eventTypeString;
@@ -90,7 +95,6 @@ public class Event implements Parcelable {
 
 	@Override
 	public int describeContents() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
