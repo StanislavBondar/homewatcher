@@ -12,11 +12,10 @@ import android.text.method.PasswordTransformationMethod;
 
 public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 	
-	public static final String DEFAULT_PASSWORD = "123456";
-	public static final String DEFAULT_USER_CODE = "1234";
-	public static final String DEFAULT_TIMEOUT = "10000";
+	public static final String DEFAULT_TIMEOUT = "10";
 	public static final String DEFAULT_PORT_NUMBER = "4025";
 	public static final String DEFAULT_SERVER_VALUE = "192.168.0.100";
+	public static final String DEFAULT_WIDGET_UPDATE = "30";
 	public static final String ZONE_PREFIX = "z";
 	public static final String USEROOTVPN = "userootvpn";
 	public static final String SERVER = "server";
@@ -24,6 +23,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	public static final String TIMEOUT = "timeout";
 	public static final String PASSWORD = "password";
 	public static final String USER_CODE = "usercode";
+	public static final String WIDGET_UPDATE = "widgetupdate";
 
 	public static String PREF_FILE = "com.donn.homewatcher_preferences";
 	
@@ -36,6 +36,8 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	private EditTextPreference serverName;
 	private EditTextPreference serverPort;
 	private EditTextPreference serverTimeout;
+	private PreferenceCategory widgetCategory;
+	private EditTextPreference widgetUpdateFrequency;
 	private PreferenceCategory zoneCategory;
 	private EditTextPreference[] zonePreferences;
 	
@@ -53,12 +55,16 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		signInCategory = new PreferenceCategory(this);
 		signInCategory.setTitle("Sign In Values");
 		
+		widgetCategory = new PreferenceCategory(this);
+		widgetCategory.setTitle("Widget Settings");
+		
 		zoneCategory = new PreferenceCategory(this);
 		zoneCategory.setTitle("Zone List");
 		
 		mainPreferenceScreen = getPreferenceManager().createPreferenceScreen(this);
 		mainPreferenceScreen.addPreference(serverCategory);
 		mainPreferenceScreen.addPreference(signInCategory);
+		mainPreferenceScreen.addPreference(widgetCategory);
 		mainPreferenceScreen.addPreference(zoneCategory);
 		
 		useRootVPN = new CheckBoxPreference(this);
@@ -68,17 +74,17 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		useRootVPN.setSummary("Connect to VPN network first via RootVPN.");
 		
 		serverName = new EditTextPreference(this);
-		serverName.setTitle("Server Name");
+		serverName.setTitle("Server name");
 		serverName.setDefaultValue(DEFAULT_SERVER_VALUE);
 		serverName.setKey(SERVER);
 		
 		serverPort = new EditTextPreference(this);
-		serverPort.setTitle("Server Port");
+		serverPort.setTitle("Server port");
 		serverPort.setDefaultValue(DEFAULT_PORT_NUMBER);
 		serverPort.setKey(PORT);
 
 		serverTimeout = new EditTextPreference(this);
-		serverTimeout.setTitle("Connection timeout (ms)");
+		serverTimeout.setTitle("Connection timeout (seconds)");
 		serverTimeout.setDefaultValue(DEFAULT_TIMEOUT);
 		serverTimeout.setKey(TIMEOUT);
 		
@@ -94,13 +100,19 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		signInPassword.getEditText().setTransformationMethod(PasswordTransformationMethod.getInstance());
 
 		userCode = new EditTextPreference(this);
-		userCode.setTitle("User Code - 4 numbers");
-		userCode.setDefaultValue(DEFAULT_USER_CODE);
+		userCode.setTitle("User code - 4 numbers");
 		userCode.setKey(USER_CODE);
 		userCode.getEditText().setTransformationMethod(PasswordTransformationMethod.getInstance());
 		
 		signInCategory.addPreference(signInPassword);
 		signInCategory.addPreference(userCode);
+		
+		widgetUpdateFrequency = new EditTextPreference(this);
+		widgetUpdateFrequency.setTitle("Widget refresh frequency (mins)");
+		widgetUpdateFrequency.setKey(WIDGET_UPDATE);
+		widgetUpdateFrequency.setDefaultValue(DEFAULT_WIDGET_UPDATE);
+		
+		widgetCategory.addPreference(widgetUpdateFrequency);
 		
 		zonePreferences = new EditTextPreference[65];
 
@@ -127,6 +139,19 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		serverName.setSummary(serverName.getText());
 		serverPort.setSummary(serverPort.getText());
 		serverTimeout.setSummary(serverTimeout.getText());
+		if (signInPassword.getText() != null) {
+			signInPassword.setSummary("Password is set");
+		}
+		else {
+			signInPassword.setSummary("Password is NOT set");
+		}
+		if (userCode.getText() != null) {
+			userCode.setSummary("User code is set");
+		}
+		else {
+			userCode.setSummary("User code is NOT set");
+		}
+		widgetUpdateFrequency.setSummary(widgetUpdateFrequency.getText() + " minutes");
 
 		setPreferenceScreen(mainPreferenceScreen);
 	}
@@ -163,7 +188,14 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		else if (key.equalsIgnoreCase(TIMEOUT)) {
 			serverTimeout.setSummary(sharedPreferences.getString(key, ""));
 		}
+		else if (key.equalsIgnoreCase(PASSWORD)) {
+			signInPassword.setSummary("Password is set");
+		}
+		else if (key.equalsIgnoreCase(USER_CODE)) {
+			userCode.setSummary("User code is set");
+		}
+		else if (key.equalsIgnoreCase(WIDGET_UPDATE)) {
+			widgetUpdateFrequency.setSummary(sharedPreferences.getString(key, ""));
+		}
 	}
-
-
 }

@@ -167,7 +167,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter(HomeWatcherService.EVENT_INTENT));
 		
-		//TODO: Make sure service is being unbound by both activity and widget
 		startService(new Intent(this, HomeWatcherService.class));
 		bindService(new Intent(this, HomeWatcherService.class), mConnection, BIND_AUTO_CREATE);
 	}
@@ -341,6 +340,8 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					setButtons();
 				}
 				else if (event.isOfType(Event.USER)) {
+					loggingFragment.addMessageToLog(event.getMessage());
+					
 					if (event.getMessage().equals(Event.USER_EVENT_LOGIN_START)) {
 						setProgressBarIndeterminateVisibility(true);
 					}
@@ -353,6 +354,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_SUCCESS)) {
 						statusFragment.notifyLEDStatus(homeWatcherService.getLEDStatusText());
 						statusFragment.notifyLEDFlashStatus(homeWatcherService.getLEDFlashStatusText());
+					}
+					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_FAIL)) {
+						statusFragment.notifyLEDUpdateInProgress(false);
 					}
 					
 					setButtons();

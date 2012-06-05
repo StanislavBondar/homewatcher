@@ -90,9 +90,14 @@ public class HomeWatcherService extends Service {
 		
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(EVENT_INTENT);
-		intentFilter.addAction(VPN_CONNECTED_INTENT);
-		intentFilter.addAction(VPN_DISCONNECTED_INTENT);
+		
+		//Local receiver for HomeWatcher events
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, intentFilter);
+		
+		//TODO: Someday, listen only for VPN events while connecting/disconnecting ignore otherwise
+		//Global receiver for remote/global (RootVPN) events
+		registerReceiver(receiver, new IntentFilter(HomeWatcherService.VPN_CONNECTED_INTENT));
+		registerReceiver(receiver, new IntentFilter(HomeWatcherService.VPN_DISCONNECTED_INTENT));
 		
 		sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
 		
@@ -106,6 +111,7 @@ public class HomeWatcherService extends Service {
 		super.onDestroy();
 		
 		LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
+		unregisterReceiver(receiver);
 	}
 	
 	public boolean isSignedIn() {
@@ -131,7 +137,9 @@ public class HomeWatcherService extends Service {
 	private SignonDetails getSignOnDetails() {
 		String server = sharedPrefs.getString(Preferences.SERVER, "preference.not.set");
 		int port = Integer.parseInt(sharedPrefs.getString(Preferences.PORT, "1111"));
-		int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, "30"));
+		int timeout = Integer.parseInt(sharedPrefs.getString(Preferences.TIMEOUT, "10"));
+		//Panel expects timeout in milliseconds, property is in seconds
+		timeout = timeout * 1000;
 		String password = sharedPrefs.getString(Preferences.PASSWORD, "passwordnotset");
 		
 		return new SignonDetails(server, port, timeout, password);
@@ -161,40 +169,35 @@ public class HomeWatcherService extends Service {
 	}
 	
 	public void signOut() {
-		boolean useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
+		publishEvent(new Event(Event.USER_EVENT_LOGOUT, Event.USER));
 		
-		try {
-			SecurityPanel.getSecurityPanel().close();
-			publishEvent(new Event("Panel was closed.", Event.LOGGING));
-		}
-		catch (PanelException e) {
-			publishEvent(new Event("Panel was not closed - due to error.", e));
-		}
-
-		if (useRootVPN) {
-			if (!disconnectFromVPN()) {
-				publishEvent(new Event("Could not disconnect from VPN", Event.ERROR));
+		if (isSignedIn) {
+			
+			SignOutThread signOutThread = new SignOutThread();
+			
+			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+				signOutThread.execute((Void[]) null);
 			}
 			else {
-				publishEvent(new Event("Successfully disconnected from VPN", Event.LOGGING));
+				signOutThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[]) null);
 			}
+			
+			publishEvent(new Event("Sign Out Thread Started", Event.LOGGING));
+			
 		}
-
-		if (panelListenerThread != null) {
-			panelListenerThread.cancel(true);
+		else {
+			publishEvent(new Event("Already Signed Out - Not Signing Out Again", Event.LOGGING));
 		}
-		setSignedIn(false);
 	}
 	
 	public void refreshStatus() {
-		publishEvent(new Event(Event.USER_EVENT_REFRESH_START, Event.USER));
-		isRefreshPending = true;
+		RefreshThread refreshThread = new RefreshThread();
 		
-		try {
-			SecurityPanel.getSecurityPanel().statusReport();
-		}
-		catch (PanelException e) {
-			processEvent(new Event("Error running status report after successful login.", e));
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+			refreshThread.execute((Void[])null);
+	    } 
+	    else {
+	    	refreshThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
 		}
 	}
 
@@ -296,30 +299,6 @@ public class HomeWatcherService extends Service {
 		sendBroadcast(new Intent(intentActionString));
 	}
 	
-	//TODO: not sure we'll disconnect quickly enough to know we've disconnected in time
-	private boolean disconnectFromVPN() {
-		sendBroadcastIntent(VPN_OFF_INTENT);
-		
-		if (isVPNConnected()) {
-			return true;
-		}
-		return false;
-	}
-	
-	//TODO: Get this running again - not sure if this is working
-	private boolean connectToVPN() {
-		sendBroadcastIntent(VPN_ON_INTENT);
-	
-		//TODO: set a property for VPN timeout - may need to do the same in RootVPN
-		for (int i = 0; i < 30; i++) {
-			sleep(1);
-			if (isVPNConnected()) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	private void sleep(int seconds) {
 		try {
 			Thread.sleep(seconds * 1000);
@@ -344,6 +323,8 @@ public class HomeWatcherService extends Service {
 				processServerMessage(event);
 			}
 			else if (event.isOfType(Event.ERROR)) {
+				Log.e((String) getText(R.string.app_name), event.getMessage());
+				
 				String exceptionMessage = event.getExceptionString();
 
 				if (exceptionMessage.contains("ECONNRESET") 
@@ -352,7 +333,6 @@ public class HomeWatcherService extends Service {
 						|| exceptionMessage.contains("failed to connect"))	
 				{
 					signOut();
-					Log.e((String) getText(R.string.app_name), event.getMessage());
 				}
 			}
 		}
@@ -392,10 +372,10 @@ public class HomeWatcherService extends Service {
 			else if (tpiMessage.getGeneralData().equals("3")) {
 				//Panel prompted for signon, may now login
 				try {
-					SecurityPanel.getSecurityPanel().networkLogin(sharedPrefs.getString(Preferences.PASSWORD, Preferences.DEFAULT_PASSWORD));
+					SecurityPanel.getSecurityPanel().networkLogin(sharedPrefs.getString(Preferences.PASSWORD, " "));
 				}
 				catch (PanelException e) {
-					processEvent(new Event("Error signing in with password after password prompt event from panel.", e));
+					publishEvent(new Event("Error signing in with password after password prompt event from panel.", e));
 				}
 				publishEvent(new Event("Panel prompted for signon, may now login.", Event.LOGGING));
 			}
@@ -422,15 +402,17 @@ public class HomeWatcherService extends Service {
 		protected Void doInBackground(Void... args) { 
 			
 			signonDetails = getSignOnDetails(); 
+			//TODO: should only use RootVPN when connected to mobile, not Wifi
 			useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
 
 			SecurityPanel panel = SecurityPanel.getSecurityPanel();
 
 			publishEvent(new Event("Login Thread Starting...", Event.LOGGING));
 			
-			if (useRootVPN && isVPNConnected()) {
+			if (useRootVPN && !isVPNConnected()) {
 				if (!connectToVPN()) {
 					publishEvent(new Event("Could not connect to VPN", new Exception("Failed to connect to VPN")));
+					publishEvent(new Event(Event.USER_EVENT_LOGIN_FAIL, Event.USER));
 					return null;
 				}
 				else {
@@ -449,6 +431,73 @@ public class HomeWatcherService extends Service {
 			}
 
 			return null;
+		}
+		
+		private boolean connectToVPN() {
+			sendBroadcastIntent(VPN_ON_INTENT);
+			
+			publishEvent(new Event("Attempting to sign in to VPN", Event.LOGGING));
+		
+			//TODO: set a property for VPN timeout - may need to do the same in RootVPN
+			for (int i = 0; i < 60; i++) {
+				sleep(1);
+				if (isVPNConnected()) {
+					publishEvent(new Event("VPN sign in successful", Event.LOGGING));
+					return true;
+				}
+			}
+			publishEvent(new Event("VPN sign in failed", Event.LOGGING));
+			return false;
+		}
+	}
+	
+	private class SignOutThread extends AsyncTask<Void, Void, Void> {
+
+		protected Void doInBackground(Void... args) { 
+			
+			try {
+				SecurityPanel.getSecurityPanel().close();
+				publishEvent(new Event("Panel was closed.", Event.LOGGING));
+			}
+			catch (PanelException e) {
+				publishEvent(new Event("Panel was not closed - due to error.", e));
+			}
+
+			if (panelListenerThread != null) {
+				panelListenerThread.cancel(true);
+			}
+			setSignedIn(false);
+			
+			boolean useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
+			
+			//TODO: why didn't I get one of these two messages when signing out of VPN?
+			if (useRootVPN) {
+				if (!disconnectFromVPN()) {
+					publishEvent(new Event("Could not disconnect from VPN", Event.ERROR));
+				}
+				else {
+					publishEvent(new Event("Successfully disconnected from VPN", Event.LOGGING));
+				}
+			}
+
+			return null;
+		}
+		
+		private boolean disconnectFromVPN() {
+			sendBroadcastIntent(VPN_OFF_INTENT);
+			
+			publishEvent(new Event("Attempting to sign out of VPN", Event.LOGGING));
+			
+			//TODO: set a property for VPN timeout - may need to do the same in RootVPN
+			for (int i = 0; i < 60; i++) {
+				sleep(1);
+				if (isVPNConnected()) {
+					publishEvent(new Event("VPN sign out successful", Event.LOGGING));
+					return true;
+				}
+			}
+			publishEvent(new Event("VPN sign out failed", Event.LOGGING));
+			return false;
 		}
 	}
 	
@@ -494,6 +543,41 @@ public class HomeWatcherService extends Service {
 		}
 	}
 
+	private class RefreshThread extends AsyncTask<Void, Void, Void> {
+		
+		protected Void doInBackground(Void...args) {
+			
+			publishEvent(new Event(Event.USER_EVENT_REFRESH_START, Event.USER));
+			isRefreshPending = true;
+			int count = 0;
+			
+			while(isRefreshPending && count < 5) {
+				count++;
+				
+				try {
+					SecurityPanel.getSecurityPanel().statusReport();
+				}
+				catch (PanelException e) {
+					publishEvent(new Event("Error running status report.", e));
+				}
+				
+				sleep(15);
+				
+				if (isRefreshPending) {
+					publishEvent(new Event("No response from panel refresh after 15 seconds.", Event.LOGGING));
+					publishEvent(new Event("Trying refresh " + (5-count) + " more time(s).", Event.LOGGING));
+				}
+			}
+			
+			if (isRefreshPending) {
+				isRefreshPending = false;
+				publishEvent(new Event("No response from panel refresh after 15 seconds.", Event.LOGGING));
+				publishEvent(new Event(Event.USER_EVENT_REFRESH_FAIL, Event.USER));
+			}
+			
+			return null;
+		}
+	}
 	
 	private class ArmStayThread extends AsyncTask<Void, Void, Void> {
 		

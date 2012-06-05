@@ -23,6 +23,7 @@ public class Event implements Parcelable {
 	public static String USER_EVENT_LOGOUT = "UserLogout";
 	public static String USER_EVENT_REFRESH_START = "UserRefreshStart";
 	public static String USER_EVENT_REFRESH_SUCCESS = "UserRefreshSuccess";
+	public static String USER_EVENT_REFRESH_FAIL = "UserRefreshFail";
 
 	private String message = "No message set."; 
 	private String eventTypeString;

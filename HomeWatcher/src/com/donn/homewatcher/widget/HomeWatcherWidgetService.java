@@ -6,6 +6,7 @@ import java.util.Calendar;
 import com.donn.homewatcher.Event;
 import com.donn.homewatcher.HomeWatcherActivity;
 import com.donn.homewatcher.HomeWatcherService;
+import com.donn.homewatcher.Preferences;
 import com.donn.homewatcher.R;
 import com.donn.homewatcher.HomeWatcherService.LocalBinder;
 
@@ -19,12 +20,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 
 public class HomeWatcherWidgetService extends Service {
+	
+	//TODO: Notifications in notification bar when status changes?
+	//TODO: Push some sort of Intent to light up the LED if an alarm happens?
+	
+	private int widgetUpdateMinutes;
 	
 	private HomeWatcherService homeWatcherService;
 	private boolean mBound = false;
@@ -40,6 +47,7 @@ public class HomeWatcherWidgetService extends Service {
 			mBound = true;
 			Log.d((String) getText(R.string.app_name), "Widget is bound to hw service.");
 			if (!homeWatcherService.isSignedIn()) {
+				wasSignedInBeforeWidgetUpdate = false;
 				Log.d((String) getText(R.string.app_name), "Widget is signing in.");
 				homeWatcherService.signIn();
 			}
@@ -71,9 +79,26 @@ public class HomeWatcherWidgetService extends Service {
 						Log.d((String) getText(R.string.app_name), "Widget - now signed in.");
 						homeWatcherService.refreshStatus();
 					}
+					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_FAIL)) {
+						Log.d((String) getText(R.string.app_name), "Widget - Login fail.");
+						updateWidgetViews();
+						setNextUpdateAlarm();
+						if (!wasSignedInBeforeWidgetUpdate) {
+							homeWatcherService.signOut();
+						}
+						stopSelf();
+					}
 					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_SUCCESS)) {
 						Log.d((String) getText(R.string.app_name), "Widget - now signed in.");
-						homeWatcherService.getLEDStatusText();
+						updateWidgetViews();
+						setNextUpdateAlarm();
+						if (!wasSignedInBeforeWidgetUpdate) {
+							homeWatcherService.signOut();
+						}
+						stopSelf();
+					}
+					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_FAIL)) {
+						Log.d((String) getText(R.string.app_name), "Widget - Refresh fail.");
 						updateWidgetViews();
 						setNextUpdateAlarm();
 						if (!wasSignedInBeforeWidgetUpdate) {
@@ -94,7 +119,7 @@ public class HomeWatcherWidgetService extends Service {
 	 	PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, defineIntent, 0);
 	 	Calendar time = Calendar.getInstance();
 	 	time.setTimeInMillis(System.currentTimeMillis());
-	 	time.add(Calendar.SECOND, 300);
+	 	time.add(Calendar.MINUTE, widgetUpdateMinutes);
         alarmManager.set(AlarmManager.RTC, time.getTimeInMillis(), pendingIntent);
 	}
 	
@@ -109,20 +134,20 @@ public class HomeWatcherWidgetService extends Service {
 	
 		String ledStatusText = homeWatcherService.getLEDStatusText();
 		SimpleDateFormat df = new SimpleDateFormat("HH:mm");
-		Calendar lastUpdateCal = homeWatcherService.getLEDStatusLastUpdated();
-		Calendar currentTimeMinus4Hours = Calendar.getInstance();
-		currentTimeMinus4Hours.add(Calendar.HOUR_OF_DAY, -4);
-		String lastUpdateString = df.format(lastUpdateCal.getTime());
+		Calendar lastPanelLEDUpdateTime = homeWatcherService.getLEDStatusLastUpdated();
+		Calendar widgetLastUpdateTime = Calendar.getInstance();
+		widgetLastUpdateTime.add(Calendar.MINUTE, -widgetUpdateMinutes);
+		String lastUpdateString = df.format(lastPanelLEDUpdateTime.getTime());
 		
 		if (!homeWatcherService.isSignedIn()) {
 			updateViews.setImageViewResource(R.id.widgetImage, R.drawable.status_unknown);
 			updateViews.setTextViewText(R.id.widgetText, "--ERR--");
 			Log.d((String) getText(R.string.app_name), "Widget could not sign in to panel.");
 		}
-		else if (lastUpdateCal.before(currentTimeMinus4Hours)) {
+		else if (lastPanelLEDUpdateTime.before(widgetLastUpdateTime)) {
 			updateViews.setImageViewResource(R.id.widgetImage, R.drawable.status_unknown);
 			updateViews.setTextViewText(R.id.widgetText, "--OLD--");
-			Log.d((String) getText(R.string.app_name), "Widget got stale update from: " + lastUpdateCal.getTime().toLocaleString());
+			Log.d((String) getText(R.string.app_name), "Widget got stale update from: " + lastPanelLEDUpdateTime.getTime().toLocaleString());
 		}
 		else if (ledStatusText.substring(1, 2).equals("1")) {
 			updateViews.setImageViewResource(R.id.widgetImage, R.drawable.status_1fire);
@@ -154,11 +179,10 @@ public class HomeWatcherWidgetService extends Service {
 		}
 		
 		Intent defineIntent = new Intent(getApplicationContext(), HomeWatcherActivity.class);
-	 	defineIntent.setFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+	 	defineIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, defineIntent, 0);
         updateViews.setOnClickPendingIntent(R.id.widget, pendingIntent);
 
-		//TODO: Set a background on the widget to make it easier to read
         manager.updateAppWidget(thisWidget, updateViews);
 	}
 
@@ -174,8 +198,10 @@ public class HomeWatcherWidgetService extends Service {
 	
 	@Override
 	public void onCreate() {
-		// TODO Auto-generated method stub
 		super.onCreate();
+		
+		SharedPreferences sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
+		widgetUpdateMinutes = Integer.parseInt(sharedPrefs.getString(Preferences.WIDGET_UPDATE, "5"));
 		
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(HomeWatcherService.EVENT_INTENT);
