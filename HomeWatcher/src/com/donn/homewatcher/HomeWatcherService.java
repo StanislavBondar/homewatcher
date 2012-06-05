@@ -22,7 +22,7 @@ import android.util.Log;
 public class HomeWatcherService extends Service {
 	
 
-	private static final String EVENT_INTENT = "com.donn.homewatcher.EVENT";
+	public static final String EVENT_INTENT = "com.donn.homewatcher.EVENT";
 	public static final String VPN_ON_INTENT = "com.donn.rootvpn.ON";
 	public static final String VPN_CONNECTED_INTENT = "com.donn.rootvpn.CONNECTED";
 	public static final String VPN_OFF_INTENT = "com.donn.rootvpn.OFF";
@@ -113,7 +113,6 @@ public class HomeWatcherService extends Service {
 	}
 	
 	private void setSignedIn(boolean value) {
-		publishEvent(new Event("isSignedIn? " + isSignedIn + " new value: " + value, Event.LOGGING));
 		isSignedIn = value;
 	}
 
@@ -181,7 +180,9 @@ public class HomeWatcherService extends Service {
 			}
 		}
 
-		panelListenerThread.cancel(true);
+		if (panelListenerThread != null) {
+			panelListenerThread.cancel(true);
+		}
 		setSignedIn(false);
 	}
 	
@@ -305,6 +306,7 @@ public class HomeWatcherService extends Service {
 		return false;
 	}
 	
+	//TODO: Get this running again - not sure if this is working
 	private boolean connectToVPN() {
 		sendBroadcastIntent(VPN_ON_INTENT);
 	
@@ -335,7 +337,10 @@ public class HomeWatcherService extends Service {
 
 	public void processEvent(Event event) {
 		try {
-			if (event.isOfType(Event.PANEL)) {
+			if (event.isOfType(Event.LOGGING)) {
+				Log.d((String) getText(R.string.app_name), event.getMessage());
+			}
+			else if (event.isOfType(Event.PANEL)) {
 				processServerMessage(event);
 			}
 			else if (event.isOfType(Event.ERROR)) {
@@ -347,6 +352,7 @@ public class HomeWatcherService extends Service {
 						|| exceptionMessage.contains("failed to connect"))	
 				{
 					signOut();
+					Log.e((String) getText(R.string.app_name), event.getMessage());
 				}
 			}
 		}
@@ -405,7 +411,7 @@ public class HomeWatcherService extends Service {
 			publishEvent(new Event(Event.USER_EVENT_REFRESH_SUCCESS, Event.USER));
 		}
 
-		publishEvent(new Event("TPI: " + tpiMessage.toString(), Event.LOGGING));
+		publishEvent(new Event(tpiMessage.toString(), Event.LOGGING));
 	}
 	
 	private class SignOnThread extends AsyncTask<Void, Void, Void> {

@@ -22,7 +22,6 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.Menu;
 import android.support.v4.view.MenuItem;
-import android.util.Log;
 import android.view.MenuInflater;
 import android.view.Window;
 
@@ -86,8 +85,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	};
 	
     private BroadcastReceiver receiver = new BroadcastReceiver() {          
-    	//TODO: which events should Activity receive? Not Panel events!
-    	
     	@Override         
     	public void onReceive(Context context, Intent intent) {             
     		Event event = (Event) intent.getParcelableExtra("EVENT");
@@ -168,8 +165,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			getSupportActionBar().setSelectedNavigationItem(savedInstanceState.getInt(TAB_KEY, 0));
 		}
 		
-		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter("com.donn.homewatcher.EVENT"));
-		//registerReceiver(receiver, new IntentFilter("com.donn.homewatcher.EVENT"));
+		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter(HomeWatcherService.EVENT_INTENT));
 		
 		//TODO: Make sure service is being unbound by both activity and widget
 		startService(new Intent(this, HomeWatcherService.class));
@@ -326,7 +322,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			Event event = (Event) msg.obj;
 
 			try {
-				Log.d((String) getText(R.string.app_name), event.getMessage());
 				if (event.isOfType(Event.LOGGING)) {
 					loggingFragment.addMessageToLog(event.getMessage());
 				}
@@ -348,12 +343,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				else if (event.isOfType(Event.USER)) {
 					if (event.getMessage().equals(Event.USER_EVENT_LOGIN_START)) {
 						setProgressBarIndeterminateVisibility(true);
-					}
-					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_SUCCESS)) {
-						//When the Activity successfully connects, it should refresh status to allow buttons and
-						//icons to update in the app for the first time.
-						homeWatcherService.refreshStatus();
-						statusFragment.notifyLEDUpdateInProgress(true);
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_SUCCESS)) {
 						//When the Activity successfully connects, it should refresh status to allow buttons and
