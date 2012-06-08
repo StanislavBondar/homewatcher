@@ -470,10 +470,12 @@ public class HomeWatcherService extends Service {
 			
 			boolean useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
 			
-			//TODO: why didn't I get one of these two messages when signing out of VPN?
+			//TODO: setting isVPNConnected = false because sometimes service is stopped immediately, before VPN
+			//can send broadcast that VPN is disconnected, and receiver is unregistered.
 			if (useRootVPN) {
 				if (!disconnectFromVPN()) {
-					publishEvent(new Event("Could not disconnect from VPN", Event.ERROR));
+					publishEvent(new Event("Could not confirm disconnect from VPN", Event.ERROR));
+					isVPNConnected = false;
 				}
 				else {
 					publishEvent(new Event("Successfully disconnected from VPN", Event.LOGGING));
@@ -491,7 +493,7 @@ public class HomeWatcherService extends Service {
 			//TODO: set a property for VPN timeout - may need to do the same in RootVPN
 			for (int i = 0; i < 60; i++) {
 				sleep(1);
-				if (isVPNConnected()) {
+				if (!isVPNConnected()) {
 					publishEvent(new Event("VPN sign out successful", Event.LOGGING));
 					return true;
 				}
