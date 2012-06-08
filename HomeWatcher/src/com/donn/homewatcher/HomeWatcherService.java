@@ -170,24 +170,25 @@ public class HomeWatcherService extends Service {
 	
 	public void signOut() {
 		publishEvent(new Event(Event.USER_EVENT_LOGOUT, Event.USER));
+
+		//Removing this check. Sometimes signOut is called to clean up (VPN, etc.), always allow signOut
+		//if (isSignedIn) {
+			
+		SignOutThread signOutThread = new SignOutThread();
 		
-		if (isSignedIn) {
-			
-			SignOutThread signOutThread = new SignOutThread();
-			
-			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-				signOutThread.execute((Void[]) null);
-			}
-			else {
-				signOutThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[]) null);
-			}
-			
-			publishEvent(new Event("Sign Out Thread Started", Event.LOGGING));
-			
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+			signOutThread.execute((Void[]) null);
 		}
 		else {
-			publishEvent(new Event("Already Signed Out - Not Signing Out Again", Event.LOGGING));
+			signOutThread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[]) null);
 		}
+		
+		publishEvent(new Event("Sign Out Thread Started", Event.LOGGING));
+			
+		//}
+		//else {
+		//	publishEvent(new Event("Already Signed Out - Not Signing Out Again", Event.LOGGING));
+		//}
 	}
 	
 	public void refreshStatus() {
@@ -471,7 +472,8 @@ public class HomeWatcherService extends Service {
 			boolean useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
 			
 			//TODO: setting isVPNConnected = false because sometimes service is stopped immediately, before VPN
-			//can send broadcast that VPN is disconnected, and receiver is unregistered.
+			//can send broadcast that VPN is disconnected, and receiver is unregistered. Create another listener
+			//and wake the thread when a message is received?
 			if (useRootVPN) {
 				if (!disconnectFromVPN()) {
 					publishEvent(new Event("Could not confirm disconnect from VPN", Event.ERROR));
@@ -486,6 +488,8 @@ public class HomeWatcherService extends Service {
 		}
 		
 		private boolean disconnectFromVPN() {
+			//TODO: maybe just change this to send broadcast, and not do any logging. 
+			//Same as issue with service being killed.
 			sendBroadcastIntent(VPN_OFF_INTENT);
 			
 			publishEvent(new Event("Attempting to sign out of VPN", Event.LOGGING));

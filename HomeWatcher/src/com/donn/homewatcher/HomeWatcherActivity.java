@@ -56,6 +56,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	private MenuItem signInMenuItem;
 
 	private String TAB_KEY = "TabKey";
+	private String FIRST_TIME_KEY = "FirstTimeKey";
 
 	private HomeWatcherService homeWatcherService;
 	private boolean mBound = false;
@@ -163,6 +164,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 		if (savedInstanceState != null) {
 			getSupportActionBar().setSelectedNavigationItem(savedInstanceState.getInt(TAB_KEY, 0));
+			firstTime = savedInstanceState.getBoolean(FIRST_TIME_KEY);
 		}
 		
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter(HomeWatcherService.EVENT_INTENT));
@@ -249,6 +251,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 
 		super.onSaveInstanceState(outState);
 		outState.putInt(TAB_KEY, getSupportActionBar().getSelectedNavigationIndex());
+		outState.putBoolean(FIRST_TIME_KEY, firstTime);
 	}
 
 	protected void onDestroy() {
