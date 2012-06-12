@@ -1,5 +1,7 @@
 package com.donn.homewatcher.widget;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
@@ -17,8 +19,26 @@ public class HomeWatcherWidget extends AppWidgetProvider {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.d("Home Watcher", "Widget got intent: " + intent.getAction());
-		context.startService(new Intent(context, HomeWatcherWidgetService.class));
+		String action = intent.getAction();
+		
+		Log.d("Home Watcher", "Widget got intent: " + action);
+		
+		if (action.equals(AppWidgetManager.ACTION_APPWIDGET_UPDATE) ||
+			action.equals("com.donn.homewatcher.widget.UPDATE")) 
+		{ 
+			Log.d("Home Watcher", "Widget is starting HomeWatcher service");
+			context.startService(new Intent(context, HomeWatcherWidgetService.class));
+		}
+		else if (action.equals(AppWidgetManager.ACTION_APPWIDGET_DELETED) || 
+				 action.equals(AppWidgetManager.ACTION_APPWIDGET_DISABLED)) 
+		{
+			Log.d("Home Watcher", "Widget is cancelling existing alarms for HomeWatcher widget");
+			AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+			Intent defineIntent = new Intent("com.donn.homewatcher.widget.UPDATE");
+		 	PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, defineIntent, 0);
+			alarmManager.cancel(pendingIntent);
+		}
+		
 	}
 
 }

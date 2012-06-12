@@ -265,6 +265,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		}
 	}
 
+	//TODO: Can you get rid of this method altogether now that everything's event driven?
 	private void setButtons() {
 
 		if (homeWatcherService != null) {
@@ -274,18 +275,18 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
 				cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
 				
-				if (signInMenuItem != null) {
-					signInMenuItem.setVisible(true);
-					if (homeWatcherService.isSignedIn() && homeWatcherService.isRefreshPending()) {
-						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
-					}
-					else if (homeWatcherService.isSignedIn()) {
-						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
-					}
-					else {
-						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
-					}
-				}
+//				if (signInMenuItem != null) {
+//					signInMenuItem.setVisible(true);
+//					if (homeWatcherService.isSignedIn() && homeWatcherService.isRefreshPending()) {
+//						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
+//					}
+//					else if (homeWatcherService.isSignedIn()) {
+//						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
+//					}
+//					else {
+//						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
+//					}
+//				}
 				
 				setProgressBarIndeterminateVisibility(false);
 			}
@@ -346,11 +347,19 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					loggingFragment.addMessageToLog(event.getMessage());
 					
 					if (event.getMessage().equals(Event.USER_EVENT_LOGIN_START)) {
+						if (signInMenuItem != null) {
+							signInMenuItem.setVisible(true);
+							signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
+						}
 						setProgressBarIndeterminateVisibility(true);
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_SUCCESS)) {
 						//When the Activity successfully connects, it should refresh status to allow buttons and
 						//icons to update in the app for the first time.
+						if (signInMenuItem != null) {
+							signInMenuItem.setVisible(true);
+							signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
+						}
 						homeWatcherService.refreshStatus();
 						statusFragment.notifyLEDUpdateInProgress(true);
 					}
@@ -360,6 +369,12 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_FAIL)) {
 						statusFragment.notifyLEDUpdateInProgress(false);
+					}
+					else if (event.getMessage().equals(Event.USER_EVENT_LOGOUT)) {
+						if (signInMenuItem != null) {
+							signInMenuItem.setVisible(true);
+							signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
+						}
 					}
 					
 					setButtons();

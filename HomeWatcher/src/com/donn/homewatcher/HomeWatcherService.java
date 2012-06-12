@@ -25,8 +25,8 @@ public class HomeWatcherService extends Service {
 	public static final String EVENT_INTENT = "com.donn.homewatcher.EVENT";
 	public static final String VPN_ON_INTENT = "com.donn.rootvpn.ON";
 	public static final String VPN_CONNECTED_INTENT = "com.donn.rootvpn.CONNECTED";
+	public static final String VPN_COULD_NOT_CONNECT_INTENT = "com.donn.rootvpn.COULDNOTCONNECT";	
 	public static final String VPN_OFF_INTENT = "com.donn.rootvpn.OFF";
-	public static final String VPN_DISCONNECTED_INTENT = "com.donn.rootvpn.DISCONNECTED";
 	
 	private PanelListenerThread panelListenerThread;
 
@@ -34,7 +34,9 @@ public class HomeWatcherService extends Service {
 	private SharedPreferences sharedPrefs;
 	private boolean isSignedIn = false;
 	private boolean isRefreshPending = false;
+	private boolean isLoginPending = false;
 	private boolean isVPNConnected = false;
+	private boolean vpnResponded = false;
 	private String ledStatusText = "00000000";
 	private String ledFlashStatusText = "00000000";
 	private Calendar ledStatusLastUpdated;
@@ -51,12 +53,16 @@ public class HomeWatcherService extends Service {
 			//If the eventHandler == null HomeWatcher isn't currently running, no need to notify
 			
 			if (intent.getAction().equals(VPN_CONNECTED_INTENT)) {
+				vpnResponded = true;
 				isVPNConnected = true;
+				publishEvent(new Event("Got the VPN Connected Intent", Event.LOGGING));
 				processEvent(new Event(VPN_CONNECTED_INTENT, Event.VPN));
 			}
-			else if (intent.getAction().equals(VPN_DISCONNECTED_INTENT)) {
+			else if (intent.getAction().equals(VPN_COULD_NOT_CONNECT_INTENT)) {
+				vpnResponded = true;
 				isVPNConnected = false;
-				processEvent(new Event(VPN_DISCONNECTED_INTENT, Event.VPN));
+				publishEvent(new Event("Got the VPN Could Not Connect Intent", Event.LOGGING));
+				processEvent(new Event(VPN_COULD_NOT_CONNECT_INTENT, Event.VPN));
 			}
 			else if (intent.getAction().equals(EVENT_INTENT)) {
 				Event event = (Event) intent.getParcelableExtra("EVENT");
@@ -94,10 +100,9 @@ public class HomeWatcherService extends Service {
 		//Local receiver for HomeWatcher events
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, intentFilter);
 		
-		//TODO: Someday, listen only for VPN events while connecting/disconnecting ignore otherwise
 		//Global receiver for remote/global (RootVPN) events
 		registerReceiver(receiver, new IntentFilter(HomeWatcherService.VPN_CONNECTED_INTENT));
-		registerReceiver(receiver, new IntentFilter(HomeWatcherService.VPN_DISCONNECTED_INTENT));
+		registerReceiver(receiver, new IntentFilter(HomeWatcherService.VPN_COULD_NOT_CONNECT_INTENT));
 		
 		sharedPrefs = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE);
 		
@@ -128,6 +133,10 @@ public class HomeWatcherService extends Service {
 	
 	public boolean isRefreshPending() {
 		return isRefreshPending;
+	}
+	
+	public boolean isLoginPending() {
+		return isLoginPending;
 	}
 	
 	public boolean isVPNConnected() {
@@ -398,28 +407,25 @@ public class HomeWatcherService extends Service {
 	private class SignOnThread extends AsyncTask<Void, Void, Void> {
 
 		private SignonDetails signonDetails;
-		private boolean useRootVPN;
 
 		protected Void doInBackground(Void... args) { 
 			
-			signonDetails = getSignOnDetails(); 
-			//TODO: should only use RootVPN when connected to mobile, not Wifi
-			useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
-
-			SecurityPanel panel = SecurityPanel.getSecurityPanel();
-
-			publishEvent(new Event("Login Thread Starting...", Event.LOGGING));
+			boolean useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
 			
-			if (useRootVPN && !isVPNConnected()) {
-				if (!connectToVPN()) {
-					publishEvent(new Event("Could not connect to VPN", new Exception("Failed to connect to VPN")));
+			if (useRootVPN) {
+				sendBroadcastIntent(VPN_ON_INTENT);
+				if(!waitIsVPNConnected()) {
+					publishEvent(new Event("Could not connect to VPN, skipping sign in", Event.LOGGING));
 					publishEvent(new Event(Event.USER_EVENT_LOGIN_FAIL, Event.USER));
 					return null;
 				}
-				else {
-					publishEvent(new Event("Successfully connected to VPN", Event.LOGGING));
-				}
+				publishEvent(new Event("VPN is connected", Event.LOGGING));
 			}
+			
+			signonDetails = getSignOnDetails(); 
+			SecurityPanel panel = SecurityPanel.getSecurityPanel();
+
+			publishEvent(new Event("Login Thread Starting...", Event.LOGGING));
 			
 			try {
 				panel.open(signonDetails.getServer(), signonDetails.getPort(), signonDetails.getTimeout());
@@ -434,22 +440,20 @@ public class HomeWatcherService extends Service {
 			return null;
 		}
 		
-		private boolean connectToVPN() {
-			sendBroadcastIntent(VPN_ON_INTENT);
+		public boolean waitIsVPNConnected() {
+			vpnResponded = false;
 			
-			publishEvent(new Event("Attempting to sign in to VPN", Event.LOGGING));
-		
-			//TODO: set a property for VPN timeout - may need to do the same in RootVPN
-			for (int i = 0; i < 60; i++) {
+			publishEvent(new Event("Waiting for a response from RootVPN", Event.LOGGING));
+			
+			while(!vpnResponded) {
 				sleep(1);
-				if (isVPNConnected()) {
-					publishEvent(new Event("VPN sign in successful", Event.LOGGING));
-					return true;
-				}
 			}
-			publishEvent(new Event("VPN sign in failed", Event.LOGGING));
-			return false;
+			
+			publishEvent(new Event("Got response from RootVPN", Event.LOGGING));
+			
+			return isVPNConnected;
 		}
+
 	}
 	
 	private class SignOutThread extends AsyncTask<Void, Void, Void> {
@@ -471,39 +475,17 @@ public class HomeWatcherService extends Service {
 			
 			boolean useRootVPN = sharedPrefs.getBoolean(Preferences.USEROOTVPN, false);
 			
-			//TODO: setting isVPNConnected = false because sometimes service is stopped immediately, before VPN
-			//can send broadcast that VPN is disconnected, and receiver is unregistered. Create another listener
-			//and wake the thread when a message is received?
 			if (useRootVPN) {
-				if (!disconnectFromVPN()) {
-					publishEvent(new Event("Could not confirm disconnect from VPN", Event.ERROR));
-					isVPNConnected = false;
-				}
-				else {
-					publishEvent(new Event("Successfully disconnected from VPN", Event.LOGGING));
-				}
+				disconnectFromVPN();
+				isVPNConnected = false;
 			}
 
 			return null;
 		}
 		
-		private boolean disconnectFromVPN() {
-			//TODO: maybe just change this to send broadcast, and not do any logging. 
-			//Same as issue with service being killed.
+		private void disconnectFromVPN() {
 			sendBroadcastIntent(VPN_OFF_INTENT);
-			
-			publishEvent(new Event("Attempting to sign out of VPN", Event.LOGGING));
-			
-			//TODO: set a property for VPN timeout - may need to do the same in RootVPN
-			for (int i = 0; i < 60; i++) {
-				sleep(1);
-				if (!isVPNConnected()) {
-					publishEvent(new Event("VPN sign out successful", Event.LOGGING));
-					return true;
-				}
-			}
-			publishEvent(new Event("VPN sign out failed", Event.LOGGING));
-			return false;
+			publishEvent(new Event("Sent request to sign out of VPN (non confirming).", Event.LOGGING));
 		}
 	}
 	
@@ -560,6 +542,7 @@ public class HomeWatcherService extends Service {
 			while(isRefreshPending && count < 5) {
 				count++;
 				
+				//TODO: May need to sign out completely, refresh of status doesn't work when it gets stuck.
 				try {
 					SecurityPanel.getSecurityPanel().statusReport();
 				}

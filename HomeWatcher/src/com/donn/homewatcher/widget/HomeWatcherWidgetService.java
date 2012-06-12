@@ -30,6 +30,7 @@ public class HomeWatcherWidgetService extends Service {
 	
 	//TODO: Notifications in notification bar when status changes?
 	//TODO: Push some sort of Intent to light up the LED if an alarm happens?
+	//TODO: Lots of Log.d messages, revise.
 	
 	private int widgetUpdateMinutes;
 	
@@ -120,6 +121,7 @@ public class HomeWatcherWidgetService extends Service {
 	 	Calendar time = Calendar.getInstance();
 	 	time.setTimeInMillis(System.currentTimeMillis());
 	 	time.add(Calendar.MINUTE, widgetUpdateMinutes);
+	 	Log.d((String) getText(R.string.app_name), "Setup next widget update for: " + time.getTime().toLocaleString());	 	
         alarmManager.set(AlarmManager.RTC, time.getTimeInMillis(), pendingIntent);
 	}
 	
@@ -181,6 +183,7 @@ public class HomeWatcherWidgetService extends Service {
 		Intent defineIntent = new Intent(getApplicationContext(), HomeWatcherActivity.class);
 	 	defineIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, defineIntent, 0);
+        //TODO: on first install, this sometimes is not reached so the widget isn't clickable
         updateViews.setOnClickPendingIntent(R.id.widget, pendingIntent);
 
         manager.updateAppWidget(thisWidget, updateViews);

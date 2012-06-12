@@ -27,6 +27,7 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 	private ProgressBar progressBar;
 	
 	private boolean ledUpdateInProgress = false;
+	private boolean isSignedIn = false;
 
 	private String ledStatusText = "00000000";
 	//TODO: add check for flashing LEDs
@@ -59,6 +60,13 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 		gridView.setAdapter(imageAdapter);
 		gridView.setOnItemClickListener(imageAdapter);
 		
+		if (isSignedIn) {
+			gridView.setVisibility(View.VISIBLE);
+		}
+		else {
+			gridView.setVisibility(View.INVISIBLE);
+		}
+		
 		progressBar = (ProgressBar) view.findViewById(R.id.progress_large);
 		
 		if (ledUpdateInProgress) {
@@ -78,6 +86,8 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 
 	@Override
 	public void notifySignedIn(boolean signedIn) {
+		isSignedIn = signedIn;
+		
 		if (firstTime) {
 			firstTime = false;
 			if (firstLoadTextView != null) {
