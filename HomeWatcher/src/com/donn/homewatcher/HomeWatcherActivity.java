@@ -274,6 +274,9 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
 				loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
 				cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
+				if (signInMenuItem != null) {
+					signInMenuItem.setVisible(true);
+				}
 				
 //				if (signInMenuItem != null) {
 //					signInMenuItem.setVisible(true);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Home Watcher</string>
+    <string name="app_name">HomeWatcher</string>
     <string name="action_bar_preferences">Prefs</string>
     <string name="login_status">Login</string>
     <string name="commandDefault">001</string>
