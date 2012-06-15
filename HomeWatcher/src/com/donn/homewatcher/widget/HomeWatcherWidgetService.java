@@ -121,7 +121,7 @@ public class HomeWatcherWidgetService extends Service {
 	 	Calendar time = Calendar.getInstance();
 	 	time.setTimeInMillis(System.currentTimeMillis());
 	 	time.add(Calendar.MINUTE, widgetUpdateMinutes);
-	 	Log.d((String) getText(R.string.app_name), "Setup next widget update for: " + time.getTime().toLocaleString());	 	
+	 	Log.d((String) getText(R.string.app_name), "Setup next widget update for: " + time.getTime().toString());	 	
         alarmManager.set(AlarmManager.RTC, time.getTimeInMillis(), pendingIntent);
 	}
 	
@@ -149,7 +149,7 @@ public class HomeWatcherWidgetService extends Service {
 		else if (lastPanelLEDUpdateTime.before(widgetLastUpdateTime)) {
 			updateViews.setImageViewResource(R.id.widgetImage, R.drawable.status_unknown);
 			updateViews.setTextViewText(R.id.widgetText, "--OLD--");
-			Log.d((String) getText(R.string.app_name), "Widget got stale update from: " + lastPanelLEDUpdateTime.getTime().toLocaleString());
+			Log.d((String) getText(R.string.app_name), "Widget got stale update from: " + lastPanelLEDUpdateTime.getTime().toString());
 		}
 		else if (ledStatusText.substring(1, 2).equals("1")) {
 			updateViews.setImageViewResource(R.id.widgetImage, R.drawable.status_1fire);

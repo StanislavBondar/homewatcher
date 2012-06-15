@@ -1,12 +1,12 @@
 package com.donn.homewatcher.fragment;
 
+import com.actionbarsherlock.app.SherlockListFragment;
 import com.donn.homewatcher.R;
 
 import android.os.Bundle;
-import android.support.v4.app.ListFragment;
 import android.widget.ArrayAdapter;
 
-public class LoggingSubFragment extends ListFragment {
+public class LoggingSubFragment extends SherlockListFragment {
 	
 	private ArrayAdapter<String> stringAdapter;
 	

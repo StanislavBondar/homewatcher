@@ -13,18 +13,19 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.support.v4.app.ActionBar;
-import android.support.v4.app.ActionBar.Tab;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.view.Menu;
-import android.support.v4.view.MenuItem;
-import android.view.MenuInflater;
+
 import android.view.Window;
 
+import com.actionbarsherlock.app.ActionBar.Tab;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuInflater;
+import com.actionbarsherlock.view.MenuItem;
+import com.actionbarsherlock.app.ActionBar;
 import com.donn.homewatcher.HomeWatcherService.LocalBinder;
 import com.donn.homewatcher.fragment.CommandTabFragment;
 import com.donn.homewatcher.fragment.LoggingSubFragment;
@@ -37,7 +38,7 @@ import com.donn.homewatcher.fragment.StatusTabFragment;
  * @author Donn
  * 
  */
-public class HomeWatcherActivity extends FragmentActivity implements ActionBar.TabListener {
+public class HomeWatcherActivity extends SherlockFragmentActivity implements ActionBar.TabListener {
 
 	private static String STATUS = "Status";
 	private static String COMMAND = "Command";
@@ -179,7 +180,7 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 	}
 	
 	public boolean onCreateOptionsMenu(Menu menu) {
-		MenuInflater inflater = getMenuInflater();
+		MenuInflater inflater = getSupportMenuInflater();
 		inflater.inflate(R.menu.actions, menu);
 		signInMenuItem = menu.getItem(0);
 		super.onCreateOptionsMenu(menu);
