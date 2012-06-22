@@ -1,12 +1,12 @@
 package com.donn.homewatcher.fragment;
 
+import com.actionbarsherlock.app.SherlockFragment;
 import com.donn.homewatcher.Event;
 import com.donn.homewatcher.HomeWatcherActivity;
 import com.donn.homewatcher.R;
 
+import android.app.Activity;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.SupportActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +14,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 
-public class LoggingTabFragment extends Fragment implements ISignInAware {
+public class LoggingTabFragment extends SherlockFragment implements ISignInAware {
 	
 	private Button runCommandButton;
 	private boolean runCommandButtonEnabled;
@@ -48,7 +48,7 @@ public class LoggingTabFragment extends Fragment implements ISignInAware {
     }
 	
 	@Override
-	public void onAttach(SupportActivity activity) {
+	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		
         try {

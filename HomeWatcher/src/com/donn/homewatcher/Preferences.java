@@ -1,16 +1,17 @@
 package com.donn.homewatcher;
 
+import com.actionbarsherlock.app.SherlockPreferenceActivity;
+
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
-import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.text.method.PasswordTransformationMethod;
 
-public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
+public class Preferences extends SherlockPreferenceActivity implements OnSharedPreferenceChangeListener {
 	
 	public static final String DEFAULT_TIMEOUT = "10";
 	public static final String DEFAULT_PORT_NUMBER = "4025";
@@ -60,6 +61,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		
 		zoneCategory = new PreferenceCategory(this);
 		zoneCategory.setTitle("Zone List");
+		
 		
 		mainPreferenceScreen = getPreferenceManager().createPreferenceScreen(this);
 		mainPreferenceScreen.addPreference(serverCategory);

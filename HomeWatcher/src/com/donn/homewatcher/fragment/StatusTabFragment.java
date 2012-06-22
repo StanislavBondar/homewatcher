@@ -1,12 +1,12 @@
 package com.donn.homewatcher.fragment;
 
+import com.actionbarsherlock.app.SherlockFragment;
 import com.donn.homewatcher.R;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.SupportActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,7 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
-public class StatusTabFragment extends Fragment implements ISignInAware {
+public class StatusTabFragment extends SherlockFragment implements ISignInAware {
 	
 	private TextView firstLoadTextView;
 	private TextView statusTextView;
@@ -95,7 +95,8 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
     }
 
 	@Override
-	public void onAttach(SupportActivity activity) {
+	public void onAttach(Activity activity) {
+		// TODO Auto-generated method stub
 		super.onAttach(activity);
 	}
 
