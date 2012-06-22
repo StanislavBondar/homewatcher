@@ -81,12 +81,17 @@ public class HomeWatcherWidgetService extends Service {
 						homeWatcherService.refreshStatus();
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_FAIL)) {
-						Log.d((String) getText(R.string.app_name), "Widget - Login fail.");
+						Log.d((String) getText(R.string.app_name), "Widget - Panel login fail.");
 						updateWidgetViews();
 						setNextUpdateAlarm();
-						if (!wasSignedInBeforeWidgetUpdate) {
-							homeWatcherService.signOut();
-						}
+						//Sign out has already been handled by service, no need to call.
+						stopSelf();
+					}
+					else if (event.getMessage().equals(Event.USER_EVENT_VPN_LOGIN_FAIL)) {
+						Log.d((String) getText(R.string.app_name), "Widget - VPN login fail.");
+						updateWidgetViews();
+						setNextUpdateAlarm();
+						//Don't need to sign out, VPN never connected and panel never signed in
 						stopSelf();
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_SUCCESS)) {

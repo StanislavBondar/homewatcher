@@ -20,6 +20,7 @@ public class Event implements Parcelable {
 	public static String USER_EVENT_LOGIN_START = "UserLoginStart";
 	public static String USER_EVENT_LOGIN_SUCCESS = "UserLoginSuccess";
 	public static String USER_EVENT_LOGIN_FAIL = "UserLoginFail";
+	public static String USER_EVENT_VPN_LOGIN_FAIL = "UserVPNLoginFail";
 	public static String USER_EVENT_LOGOUT = "UserLogout";
 	public static String USER_EVENT_REFRESH_START = "UserRefreshStart";
 	public static String USER_EVENT_REFRESH_SUCCESS = "UserRefreshSuccess";

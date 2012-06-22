@@ -76,8 +76,10 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 				processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
 				firstTime = false;
 			}
-
-			setButtons();
+			
+			statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
+			loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
+			cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
 		}        
 		@Override        
 		public void onServiceDisconnected(ComponentName arg0) {            
@@ -182,9 +184,16 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.actions, menu);
 		signInMenuItem = menu.getItem(0);
-		super.onCreateOptionsMenu(menu);
-		setButtons();
+		if (homeWatcherService.isPreferencesSet()) {
+			signInMenuItem.setVisible(true);
+			setProgressBarIndeterminateVisibility(false);
+		}
+		else {
+			signInMenuItem.setVisible(false);
+			setProgressBarIndeterminateVisibility(true);
+		}			
 
+		super.onCreateOptionsMenu(menu);
 		return true;
 	}
 
@@ -226,10 +235,8 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 			transaction.attach(fragment);
 		}
 		transaction.commit();
-		
-		setButtons();
 	}
-
+	
 	protected void onSaveInstanceState(Bundle outState) {
 		Collection<Fragment[]> fragmentArrays = fragmentMap.values();
 		for (Fragment[] fragmentArray : fragmentArrays) {
@@ -262,42 +269,6 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 		if (mBound) {
 			unbindService(mConnection);
 			mBound = false;
-		}
-	}
-
-	//TODO: Can you get rid of this method altogether now that everything's event driven?
-	private void setButtons() {
-
-		if (homeWatcherService != null) {
-			if (homeWatcherService.isPreferencesSet()) {
-				
-				statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
-				loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
-				cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
-				if (signInMenuItem != null) {
-					signInMenuItem.setVisible(true);
-				}
-				
-//				if (signInMenuItem != null) {
-//					signInMenuItem.setVisible(true);
-//					if (homeWatcherService.isSignedIn() && homeWatcherService.isRefreshPending()) {
-//						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
-//					}
-//					else if (homeWatcherService.isSignedIn()) {
-//						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
-//					}
-//					else {
-//						signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
-//					}
-//				}
-				
-				setProgressBarIndeterminateVisibility(false);
-			}
-			else {
-				if (signInMenuItem != null) {
-					signInMenuItem.setVisible(false);
-				}
-			}
 		}
 	}
 
@@ -343,9 +314,8 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 					{
 						statusFragment.notifyLEDUpdateInProgress(false);
 					}
-					
-					setButtons();
 				}
+				//TODO: persist the state of the menu buttons in onSaveInstanceState
 				else if (event.isOfType(Event.USER)) {
 					loggingFragment.addMessageToLog(event.getMessage());
 					
@@ -355,6 +325,11 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 							signInMenuItem.setIcon(getResources().getDrawable(R.drawable.sign_in_pending));
 						}
 						setProgressBarIndeterminateVisibility(true);
+						statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						statusFragment.notifyTextStatus("User login is pending...");
+						statusFragment.notifyTextError(null);
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_SUCCESS)) {
 						//When the Activity successfully connects, it should refresh status to allow buttons and
@@ -364,23 +339,55 @@ public class HomeWatcherActivity extends FragmentActivity implements ActionBar.T
 							signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_in));
 						}
 						homeWatcherService.refreshStatus();
+						statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
 						statusFragment.notifyLEDUpdateInProgress(true);
+						statusFragment.notifyTextStatus("User is logged in.");
+						statusFragment.notifyTextError(null);
+						setProgressBarIndeterminateVisibility(false);
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_SUCCESS)) {
 						statusFragment.notifyLEDStatus(homeWatcherService.getLEDStatusText());
 						statusFragment.notifyLEDFlashStatus(homeWatcherService.getLEDFlashStatusText());
+						statusFragment.notifyTextError(null);
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_FAIL)) {
 						statusFragment.notifyLEDUpdateInProgress(false);
+						statusFragment.notifyTextError("User refresh was unsuccessful.");
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_LOGOUT)) {
 						if (signInMenuItem != null) {
 							signInMenuItem.setVisible(true);
 							signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
 						}
+						statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						statusFragment.notifyTextStatus("User is logged out.");
 					}
-					
-					setButtons();
+					else if (event.getMessage().equals(Event.USER_EVENT_LOGIN_FAIL)) {
+						if (signInMenuItem != null) {
+							signInMenuItem.setVisible(true);
+							signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
+						}
+						statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						statusFragment.notifyTextStatus("User is logged out.");
+						statusFragment.notifyTextError("User panel login was unsuccessful.");
+					}
+					else if (event.getMessage().equals(Event.USER_EVENT_VPN_LOGIN_FAIL)) {
+						if (signInMenuItem != null) {
+							signInMenuItem.setVisible(true);
+							signInMenuItem.setIcon(getResources().getDrawable(R.drawable.signed_out));
+						}
+						statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
+						statusFragment.notifyTextStatus("User is logged out.");
+						statusFragment.notifyTextError("User VPN login was unsuccessful.");
+					}
 				}
 			}
 			catch (Exception e) {

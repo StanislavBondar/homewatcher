@@ -56,13 +56,15 @@ public class HomeWatcherService extends Service {
 				vpnResponded = true;
 				isVPNConnected = true;
 				publishEvent(new Event("Got the VPN Connected Intent", Event.LOGGING));
-				processEvent(new Event(VPN_CONNECTED_INTENT, Event.VPN));
+				//Don't need to do this, no action is taken
+				//processEvent(new Event(VPN_CONNECTED_INTENT, Event.VPN));
 			}
 			else if (intent.getAction().equals(VPN_COULD_NOT_CONNECT_INTENT)) {
 				vpnResponded = true;
 				isVPNConnected = false;
 				publishEvent(new Event("Got the VPN Could Not Connect Intent", Event.LOGGING));
-				processEvent(new Event(VPN_COULD_NOT_CONNECT_INTENT, Event.VPN));
+				//Don't need to do this, no action is taken
+				//processEvent(new Event(VPN_COULD_NOT_CONNECT_INTENT, Event.VPN));
 			}
 			else if (intent.getAction().equals(EVENT_INTENT)) {
 				Event event = (Event) intent.getParcelableExtra("EVENT");
@@ -416,7 +418,7 @@ public class HomeWatcherService extends Service {
 				sendBroadcastIntent(VPN_ON_INTENT);
 				if(!waitIsVPNConnected()) {
 					publishEvent(new Event("Could not connect to VPN, skipping sign in", Event.LOGGING));
-					publishEvent(new Event(Event.USER_EVENT_LOGIN_FAIL, Event.USER));
+					publishEvent(new Event(Event.USER_EVENT_VPN_LOGIN_FAIL, Event.USER));
 					return null;
 				}
 				publishEvent(new Event("VPN is connected", Event.LOGGING));

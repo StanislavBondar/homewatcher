@@ -22,6 +22,8 @@ import android.widget.AdapterView.OnItemClickListener;
 public class StatusTabFragment extends Fragment implements ISignInAware {
 	
 	private TextView firstLoadTextView;
+	private TextView statusTextView;
+	private TextView errorTextView;
 	private GridView gridView;
 	private ImageAdapter imageAdapter;
 	private ProgressBar progressBar;
@@ -47,6 +49,19 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 		View view = inflater.inflate(R.layout.status_fragment, container, false);
 		
 		firstLoadTextView = (TextView) view.findViewById(R.id.text_first_load);
+		
+		statusTextView = (TextView) view.findViewById(R.id.text_status);
+		if (statusTextView.getText() == null) {
+			statusTextView.setText("No status to report, yet.");
+		}
+		
+		errorTextView = (TextView) view.findViewById(R.id.text_error);
+		if (errorTextView.getText() == null) {
+			errorTextView.setText("No error to report, yet.");
+		}
+		
+   		statusTextView.setVisibility(View.VISIBLE);
+   		errorTextView.setVisibility(View.VISIBLE);
 		
 		if (firstTime) {
        		firstLoadTextView.setVisibility(View.VISIBLE);
@@ -92,6 +107,8 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 			firstTime = false;
 			if (firstLoadTextView != null) {
 				firstLoadTextView.setVisibility(View.INVISIBLE);
+				statusTextView.setVisibility(View.VISIBLE);
+				errorTextView.setVisibility(View.VISIBLE);
 			}
 		}
 		else {
@@ -136,6 +153,21 @@ public class StatusTabFragment extends Fragment implements ISignInAware {
 	
 	public void notifyLEDFlashStatus(String ledFlashText) {
 		this.ledFlashText = ledFlashText;
+	}
+	
+	public void notifyTextStatus(String textStatus) {
+		statusTextView.setText(textStatus);
+	}
+	
+	public void notifyTextError(String textError) {
+		if (textError == null) {
+			//There is no error currently, hide the field
+			errorTextView.setVisibility(View.INVISIBLE);
+		}
+		else {
+			errorTextView.setText(textError);
+			errorTextView.setVisibility(View.VISIBLE);
+		}
 	}
 	
 	private class ImageAdapter extends BaseAdapter implements OnItemClickListener {
