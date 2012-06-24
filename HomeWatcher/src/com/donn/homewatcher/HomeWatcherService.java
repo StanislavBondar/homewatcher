@@ -22,7 +22,6 @@ import android.util.Log;
 public class HomeWatcherService extends Service {
 	
 
-	public static final String EVENT_INTENT = "com.donn.homewatcher.EVENT";
 	public static final String VPN_ON_INTENT = "com.donn.rootvpn.ON";
 	public static final String VPN_CONNECTED_INTENT = "com.donn.rootvpn.CONNECTED";
 	public static final String VPN_COULD_NOT_CONNECT_INTENT = "com.donn.rootvpn.COULDNOTCONNECT";	
@@ -66,7 +65,7 @@ public class HomeWatcherService extends Service {
 				//Don't need to do this, no action is taken
 				//processEvent(new Event(VPN_COULD_NOT_CONNECT_INTENT, Event.VPN));
 			}
-			else if (intent.getAction().equals(EVENT_INTENT)) {
+			else if (intent.getAction().equals(Event.EVENT_INTENT)) {
 				Event event = (Event) intent.getParcelableExtra("EVENT");
 	    		processEvent(event);	
 			}
@@ -97,7 +96,7 @@ public class HomeWatcherService extends Service {
 		super.onCreate();
 		
 		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(EVENT_INTENT);
+		intentFilter.addAction(Event.EVENT_INTENT);
 		
 		//Local receiver for HomeWatcher events
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, intentFilter);
@@ -129,10 +128,6 @@ public class HomeWatcherService extends Service {
 		isSignedIn = value;
 	}
 
-	public boolean isPreferencesSet() {
-		return sharedPrefs.contains(Preferences.PASSWORD);
-	}
-	
 	public boolean isRefreshPending() {
 		return isRefreshPending;
 	}
@@ -321,7 +316,7 @@ public class HomeWatcherService extends Service {
 	}
 	
 	private void publishEvent(Event event) {
-		Intent localIntent = new Intent(EVENT_INTENT);
+		Intent localIntent = new Intent(Event.EVENT_INTENT);
 		localIntent.putExtra("EVENT", event);
 		localBroadcastManager.sendBroadcast(localIntent);
 	}

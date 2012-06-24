@@ -21,7 +21,6 @@ import android.widget.AdapterView.OnItemClickListener;
 
 public class StatusTabFragment extends SherlockFragment implements ISignInAware {
 	
-	private TextView firstLoadTextView;
 	private TextView statusTextView;
 	private TextView errorTextView;
 	private GridView gridView;
@@ -34,8 +33,9 @@ public class StatusTabFragment extends SherlockFragment implements ISignInAware 
 	private String ledStatusText = "00000000";
 	//TODO: add check for flashing LEDs
 	private String ledFlashText = "00000000";
-
-	private boolean firstTime = true;
+	
+	private String statusText = null;
+	private String errorText = null;
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -48,28 +48,12 @@ public class StatusTabFragment extends SherlockFragment implements ISignInAware 
 		// Inflate the layout for this fragment
 		View view = inflater.inflate(R.layout.status_fragment, container, false);
 		
-		firstLoadTextView = (TextView) view.findViewById(R.id.text_first_load);
-		
 		statusTextView = (TextView) view.findViewById(R.id.text_status);
-		if (statusTextView.getText() == null) {
-			statusTextView.setText("No status to report, yet.");
-		}
+		statusTextView.setText(statusText);
 		
 		errorTextView = (TextView) view.findViewById(R.id.text_error);
-		if (errorTextView.getText() == null) {
-			errorTextView.setText("No error to report, yet.");
-		}
-		
-   		statusTextView.setVisibility(View.VISIBLE);
-   		errorTextView.setVisibility(View.VISIBLE);
-		
-		if (firstTime) {
-       		firstLoadTextView.setVisibility(View.VISIBLE);
-       	}
-       	else {
-       		firstLoadTextView.setVisibility(View.INVISIBLE);
-       	}
-		
+		errorTextView.setText(errorText);
+   		
 		gridView = (GridView) view.findViewById(R.id.gridview);
 		imageAdapter = new ImageAdapter(getActivity());
 		gridView.setAdapter(imageAdapter);
@@ -104,27 +88,17 @@ public class StatusTabFragment extends SherlockFragment implements ISignInAware 
 	public void notifySignedIn(boolean signedIn) {
 		isSignedIn = signedIn;
 		
-		if (firstTime) {
-			firstTime = false;
-			if (firstLoadTextView != null) {
-				firstLoadTextView.setVisibility(View.INVISIBLE);
-				statusTextView.setVisibility(View.VISIBLE);
-				errorTextView.setVisibility(View.VISIBLE);
+		if (gridView != null) {
+			if (signedIn) {
+				gridView.setVisibility(View.VISIBLE);
 			}
-		}
-		else {
-			if (gridView != null) {
-				if (signedIn) {
-					gridView.setVisibility(View.VISIBLE);
-				}
-				else {
-					gridView.setVisibility(View.INVISIBLE);
-					ledStatusText = "00000000";
-					ledFlashText = "00000000";
-					imageAdapter = new ImageAdapter(getActivity());
-					gridView.setAdapter(imageAdapter);
-					gridView.setOnItemClickListener(imageAdapter);
-				}
+			else {
+				gridView.setVisibility(View.INVISIBLE);
+				ledStatusText = "00000000";
+				ledFlashText = "00000000";
+				imageAdapter = new ImageAdapter(getActivity());
+				gridView.setAdapter(imageAdapter);
+				gridView.setOnItemClickListener(imageAdapter);
 			}
 		}
 	}
@@ -156,18 +130,31 @@ public class StatusTabFragment extends SherlockFragment implements ISignInAware 
 		this.ledFlashText = ledFlashText;
 	}
 	
-	public void notifyTextStatus(String textStatus) {
-		statusTextView.setText(textStatus);
+	public void notifyTextStatus(String statusText) {
+		this.statusText = statusText;
+		if (statusTextView != null) {
+			if (statusText == null) {
+				//There is no status currently, hide the field
+				statusTextView.setVisibility(View.INVISIBLE);
+			}
+			else {
+				statusTextView.setText(statusText);
+				statusTextView.setVisibility(View.VISIBLE);
+			}
+		}
 	}
 	
-	public void notifyTextError(String textError) {
-		if (textError == null) {
-			//There is no error currently, hide the field
-			errorTextView.setVisibility(View.INVISIBLE);
-		}
-		else {
-			errorTextView.setText(textError);
-			errorTextView.setVisibility(View.VISIBLE);
+	public void notifyTextError(String errorText) {
+		this.errorText = errorText;
+		if (errorTextView != null) {
+			if (errorText == null) {
+				//There is no error currently, hide the field
+				errorTextView.setVisibility(View.INVISIBLE);
+			}
+			else {
+				errorTextView.setText(errorText);
+				errorTextView.setVisibility(View.VISIBLE);
+			}
 		}
 	}
 	

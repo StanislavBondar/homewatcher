@@ -25,6 +25,10 @@ public class Event implements Parcelable {
 	public static String USER_EVENT_REFRESH_START = "UserRefreshStart";
 	public static String USER_EVENT_REFRESH_SUCCESS = "UserRefreshSuccess";
 	public static String USER_EVENT_REFRESH_FAIL = "UserRefreshFail";
+	public static String USER_EVENT_PREFERENCES_SET = "UserPreferencesSet";
+	public static String USER_EVENT_PREFERENCES_NOT_SET = "UserPreferencesNotSet";
+
+	public static final String EVENT_INTENT = "com.donn.homewatcher.EVENT";
 
 	private String message = "No message set."; 
 	private String eventTypeString;

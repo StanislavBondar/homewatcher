@@ -1,8 +1,7 @@
 package com.donn.homewatcher;
 
-import com.actionbarsherlock.app.SherlockPreferenceActivity;
-
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -10,6 +9,8 @@ import android.preference.EditTextPreference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
 import android.text.method.PasswordTransformationMethod;
+
+import com.actionbarsherlock.app.SherlockPreferenceActivity;
 
 public class Preferences extends SherlockPreferenceActivity implements OnSharedPreferenceChangeListener {
 	
@@ -25,6 +26,9 @@ public class Preferences extends SherlockPreferenceActivity implements OnSharedP
 	public static final String PASSWORD = "password";
 	public static final String USER_CODE = "usercode";
 	public static final String WIDGET_UPDATE = "widgetupdate";
+	public static final String PROBLEM_TEXT = "problemtext";
+	public static final String PREFERENCES_ARE_VALID = "preferencesarevalid";
+
 
 	public static String PREF_FILE = "com.donn.homewatcher_preferences";
 	
@@ -45,10 +49,11 @@ public class Preferences extends SherlockPreferenceActivity implements OnSharedP
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		
 		createMainPreferenceScreen();
 	}
 
+	@SuppressWarnings("deprecation")
 	private void createMainPreferenceScreen() {
 		serverCategory = new PreferenceCategory(this);
 		serverCategory.setTitle("Server Settings");
@@ -61,7 +66,6 @@ public class Preferences extends SherlockPreferenceActivity implements OnSharedP
 		
 		zoneCategory = new PreferenceCategory(this);
 		zoneCategory.setTitle("Zone List");
-		
 		
 		mainPreferenceScreen = getPreferenceManager().createPreferenceScreen(this);
 		mainPreferenceScreen.addPreference(serverCategory);
@@ -97,7 +101,6 @@ public class Preferences extends SherlockPreferenceActivity implements OnSharedP
 		
 		signInPassword = new EditTextPreference(this);
 		signInPassword.setTitle("Server password (1-6) chars");
-		//signInPassword.setDefaultValue(DEFAULT_PASSWORD);
 		signInPassword.setKey(PASSWORD);
 		signInPassword.getEditText().setTransformationMethod(PasswordTransformationMethod.getInstance());
 
@@ -138,26 +141,11 @@ public class Preferences extends SherlockPreferenceActivity implements OnSharedP
 			zoneCount++;
 		}
 		
-		serverName.setSummary(serverName.getText());
-		serverPort.setSummary(serverPort.getText());
-		serverTimeout.setSummary(serverTimeout.getText());
-		if (signInPassword.getText() != null) {
-			signInPassword.setSummary("Password is set");
-		}
-		else {
-			signInPassword.setSummary("Password is NOT set");
-		}
-		if (userCode.getText() != null) {
-			userCode.setSummary("User code is set");
-		}
-		else {
-			userCode.setSummary("User code is NOT set");
-		}
-		widgetUpdateFrequency.setSummary(widgetUpdateFrequency.getText() + " minutes");
+		validatePreferences();
 
 		setPreferenceScreen(mainPreferenceScreen);
 	}
-
+	
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -176,28 +164,99 @@ public class Preferences extends SherlockPreferenceActivity implements OnSharedP
 	}
 
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-	
+		
 		if (key.startsWith(ZONE_PREFIX)) {
 			int preferenceIndex = Integer.parseInt(key.substring(1));
 			zonePreferences[preferenceIndex].setSummary(sharedPreferences.getString(key, ""));
 		}
-		else if (key.equalsIgnoreCase(SERVER)) {
-			serverName.setSummary(sharedPreferences.getString(key, ""));
+		
+		validatePreferences();
+	}
+	
+	private void validatePreferences() {
+		StringBuilder problems = new StringBuilder();
+		
+		if (isEmpty(serverName.getText())) {
+			problems.append(serverName.getTitle() + " is: " + serverName.getText() + "\n");
+			serverName.setSummary("Preference not set/incorrect.");
 		}
-		else if (key.equalsIgnoreCase(PORT)) {
-			serverPort.setSummary(sharedPreferences.getString(key, ""));
+		else {
+			serverName.setSummary(serverName.getText());
 		}
-		else if (key.equalsIgnoreCase(TIMEOUT)) {
-			serverTimeout.setSummary(sharedPreferences.getString(key, ""));
+
+		if (isEmpty(serverPort.getText()) || isNotNumeric(serverPort.getText())) {
+			problems.append(serverPort.getTitle() + " is: " + serverPort.getText() + "\n");
+			serverPort.setSummary("Preference not set/incorrect.");
 		}
-		else if (key.equalsIgnoreCase(PASSWORD)) {
-			signInPassword.setSummary("Password is set");
+		else {
+			serverPort.setSummary(serverPort.getText());
 		}
-		else if (key.equalsIgnoreCase(USER_CODE)) {
-			userCode.setSummary("User code is set");
+
+		if (isEmpty(serverTimeout.getText()) || isNotNumeric(serverTimeout.getText())) {
+			problems.append(serverTimeout.getTitle() + " is: " + serverTimeout.getText() + "\n");
+			serverTimeout.setSummary("Preference not set/incorrect.");
 		}
-		else if (key.equalsIgnoreCase(WIDGET_UPDATE)) {
-			widgetUpdateFrequency.setSummary(sharedPreferences.getString(key, ""));
+		else {
+			serverTimeout.setSummary(serverTimeout.getText() + " seconds");
+		}
+
+		if (isEmpty(signInPassword.getText())) {
+			problems.append(signInPassword.getTitle() + " is: " + signInPassword.getText() + "\n");
+			signInPassword.setSummary("Preference not set/incorrect.");
+		}
+		else {
+			signInPassword.setSummary("Password is set.");
+		}
+
+		if (isEmpty(userCode.getText()) || isNotNumeric(userCode.getText())) {
+			problems.append(userCode.getTitle() + " is: " + userCode.getText() + "\n");
+			userCode.setSummary("Preference not set/incorrect.");
+		}
+		else {
+			userCode.setSummary("User code is set.");
+		}
+
+		if (isEmpty(widgetUpdateFrequency.getText()) || isNotNumeric(widgetUpdateFrequency.getText())) {
+			problems.append(widgetUpdateFrequency.getTitle() + " is: " + widgetUpdateFrequency.getText() + "\n");
+			widgetUpdateFrequency.setSummary("Preference not set/incorrect.");
+		}
+		else {
+			widgetUpdateFrequency.setSummary(widgetUpdateFrequency.getText() + " minutes");
+		}
+
+		Editor editor = getSharedPreferences(Preferences.PREF_FILE, MODE_PRIVATE).edit();
+		if (problems.length() < 1) {
+			editor.putBoolean(PREFERENCES_ARE_VALID, true);
+		}
+		else {
+			editor.putBoolean(PREFERENCES_ARE_VALID, false);
+		}
+		editor.putString(PROBLEM_TEXT, problems.toString());
+		editor.commit();
+	}
+	
+	private boolean isEmpty(String string) {
+		if (string == null) {
+			return true;
+		}
+		else if (string.length() < 1) {
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
+	
+	private boolean isNotNumeric(String string) {
+		try {
+			Integer.parseInt(string);
+		}
+		catch (NumberFormatException e) {
+			return true;
+		}
+		
+		return false;
+	}
+
+
 }

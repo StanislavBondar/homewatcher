@@ -68,7 +68,7 @@ public class HomeWatcherWidgetService extends Service {
 	private BroadcastReceiver receiver = new BroadcastReceiver() {          
 		@Override         
 		public void onReceive(Context context, Intent intent) {     
-			if (intent.getAction().equals(HomeWatcherService.EVENT_INTENT)) {
+			if (intent.getAction().equals(Event.EVENT_INTENT)) {
 				
 				Event event = (Event) intent.getParcelableExtra("EVENT");
 				Log.d((String) getText(R.string.app_name), "Widget:" + event.getMessage());
@@ -212,7 +212,7 @@ public class HomeWatcherWidgetService extends Service {
 		widgetUpdateMinutes = Integer.parseInt(sharedPrefs.getString(Preferences.WIDGET_UPDATE, "5"));
 		
 		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(HomeWatcherService.EVENT_INTENT);
+		intentFilter.addAction(Event.EVENT_INTENT);
 		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, intentFilter);
 	}
 

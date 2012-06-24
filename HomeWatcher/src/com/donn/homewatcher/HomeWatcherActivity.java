@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -61,6 +62,8 @@ public class HomeWatcherActivity extends SherlockFragmentActivity implements Act
 	private HomeWatcherService homeWatcherService;
 	private boolean mBound = false;
 	
+	private SharedPreferences prefs;
+	
     /** Defines callbacks for service binding, passed to bindService() */    
 	private ServiceConnection mConnection = new ServiceConnection() {        
 		@Override        
@@ -68,18 +71,8 @@ public class HomeWatcherActivity extends SherlockFragmentActivity implements Act
 			// We've bound to LocalService, cast the IBinder and get LocalService instance            
 			LocalBinder binder = (LocalBinder) service;            
 			homeWatcherService = binder.getService();         
-			mBound = true;        
+			mBound = true;
 			
-			if (firstTime) {
-				processEvent(new Event("Starting HomeWatcher.", Event.LOGGING));
-				processEvent(new Event("To Sign In, push 'Sign-In'...", Event.LOGGING));
-				processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
-				firstTime = false;
-			}
-			
-			statusFragment.notifySignedIn(homeWatcherService.isSignedIn());
-			loggingTabFragment.notifySignedIn(homeWatcherService.isSignedIn());
-			cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
 		}        
 		@Override        
 		public void onServiceDisconnected(ComponentName arg0) {            
@@ -101,6 +94,8 @@ public class HomeWatcherActivity extends SherlockFragmentActivity implements Act
     
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		 prefs = getSharedPreferences(Preferences.PREF_FILE, Preferences.MODE_PRIVATE);
 		
         // Request for the progress bar to be shown in the title
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -169,7 +164,7 @@ public class HomeWatcherActivity extends SherlockFragmentActivity implements Act
 			firstTime = savedInstanceState.getBoolean(FIRST_TIME_KEY);
 		}
 		
-		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter(HomeWatcherService.EVENT_INTENT));
+		LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter(Event.EVENT_INTENT));
 		
 		startService(new Intent(this, HomeWatcherService.class));
 		bindService(new Intent(this, HomeWatcherService.class), mConnection, BIND_AUTO_CREATE);
@@ -177,22 +172,14 @@ public class HomeWatcherActivity extends SherlockFragmentActivity implements Act
 
 	@Override
 	protected void onStart() {
-		super.onStart();
+ 		super.onStart();
 	}
 	
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getSupportMenuInflater();
 		inflater.inflate(R.menu.actions, menu);
 		signInMenuItem = menu.getItem(0);
-		if (homeWatcherService.isPreferencesSet()) {
-			signInMenuItem.setVisible(true);
-			setProgressBarIndeterminateVisibility(false);
-		}
-		else {
-			signInMenuItem.setVisible(false);
-			setProgressBarIndeterminateVisibility(true);
-		}			
-
+		checkPreferences();
 		super.onCreateOptionsMenu(menu);
 		return true;
 	}
@@ -235,6 +222,33 @@ public class HomeWatcherActivity extends SherlockFragmentActivity implements Act
 			transaction.attach(fragment);
 		}
 		transaction.commit();
+
+		if (firstTime) {
+			processEvent(new Event("Starting HomeWatcher.", Event.LOGGING));
+			processEvent(new Event("To Sign In, push 'Sign-In'...", Event.LOGGING));
+			processEvent(new Event("Or... if first time running app, set preferences first.", Event.LOGGING));
+			
+			firstTime = false;
+		}
+		
+		checkPreferences();
+	}
+
+	private void checkPreferences() {
+		boolean prefsAreValid = prefs.getBoolean(Preferences.PREFERENCES_ARE_VALID, false);
+		if (prefsAreValid) {
+			if (signInMenuItem != null) {
+				signInMenuItem.setVisible(true);
+			}
+			setProgressBarIndeterminateVisibility(false);
+		}
+		else {
+			if (signInMenuItem != null) {
+				signInMenuItem.setVisible(false);
+			}
+			statusFragment.notifyTextError(prefs.getString(Preferences.PROBLEM_TEXT, "Please set preferences first!"));
+			setProgressBarIndeterminateVisibility(true);
+		}
 	}
 	
 	protected void onSaveInstanceState(Bundle outState) {
@@ -376,6 +390,7 @@ public class HomeWatcherActivity extends SherlockFragmentActivity implements Act
 						cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
 						statusFragment.notifyTextStatus("User is logged out.");
 						statusFragment.notifyTextError("User panel login was unsuccessful.");
+						setProgressBarIndeterminateVisibility(false);
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_VPN_LOGIN_FAIL)) {
 						if (signInMenuItem != null) {
@@ -387,6 +402,7 @@ public class HomeWatcherActivity extends SherlockFragmentActivity implements Act
 						cmdFragment.notifySignedIn(homeWatcherService.isSignedIn());
 						statusFragment.notifyTextStatus("User is logged out.");
 						statusFragment.notifyTextError("User VPN login was unsuccessful.");
+						setProgressBarIndeterminateVisibility(false);
 					}
 				}
 			}
