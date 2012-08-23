@@ -22,6 +22,8 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -38,10 +40,14 @@ public class HomeWatcherWidgetService extends Service {
 	private boolean mBound = false;
 	boolean wasSignedInBeforeWidgetUpdate = false;
 	
+	private WakeLock wakeLock;
+	
     /** Defines callbacks for service binding, passed to bindService() */    
 	private ServiceConnection mConnection = new ServiceConnection() {        
 		@Override        
 		public void onServiceConnected(ComponentName className, IBinder service) {            
+			wakeLockOn();
+			
 			// We've bound to LocalService, cast the IBinder and get LocalService instance            
 			LocalBinder binder = (LocalBinder) service;            
 			homeWatcherService = binder.getService();         
@@ -59,7 +65,8 @@ public class HomeWatcherWidgetService extends Service {
 			}
 		}        
 		@Override        
-		public void onServiceDisconnected(ComponentName arg0) {            
+		public void onServiceDisconnected(ComponentName arg0) {      
+			wakeLockOff();
 			mBound = false;
 			Log.d((String) getText(R.string.app_name), "Widget is unbound to hw service.");
 		}    
@@ -85,6 +92,7 @@ public class HomeWatcherWidgetService extends Service {
 						updateWidgetViews();
 						setNextUpdateAlarm();
 						//Sign out has already been handled by service, no need to call.
+						wakeLockOff();
 						stopSelf();
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_VPN_LOGIN_FAIL)) {
@@ -92,6 +100,7 @@ public class HomeWatcherWidgetService extends Service {
 						updateWidgetViews();
 						setNextUpdateAlarm();
 						//Don't need to sign out, VPN never connected and panel never signed in
+						wakeLockOff();
 						stopSelf();
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_SUCCESS)) {
@@ -101,6 +110,7 @@ public class HomeWatcherWidgetService extends Service {
 						if (!wasSignedInBeforeWidgetUpdate) {
 							homeWatcherService.signOut();
 						}
+						wakeLockOff();
 						stopSelf();
 					}
 					else if (event.getMessage().equals(Event.USER_EVENT_REFRESH_FAIL)) {
@@ -110,6 +120,7 @@ public class HomeWatcherWidgetService extends Service {
 						if (!wasSignedInBeforeWidgetUpdate) {
 							homeWatcherService.signOut();
 						}
+						wakeLockOff();
 						stopSelf();
 					}
 				}
@@ -226,10 +237,43 @@ public class HomeWatcherWidgetService extends Service {
 			unbindService(mConnection);
 		}
 	}
+	
+	private void wakeLockOn() {
+		try {
+			Log.d((String) getText(R.string.app_name), "Widget is starting wake-lock.");
+			PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+			// Could use bright instead so we actually wake the device 
+			// and we keep it on for a bit after release
+			wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | 
+													PowerManager.ACQUIRE_CAUSES_WAKEUP |
+													PowerManager.ON_AFTER_RELEASE, 
+													"My Tag");
+			wakeLock.acquire(); // screen will stay on until "wl.release();" is called
+		} 
+		catch (Exception e) {
+			Log.e((String) getText(R.string.app_name), "Widget failed to establish wake lock");
+		}
+	}
+	
+	private void wakeLockOff() {
+		if (wakeLock != null) {
+			Log.d((String) getText(R.string.app_name), "Widget is turning off wake-lock");
+			wakeLock.release();
+		}
+		else {
+			Log.d((String) getText(R.string.app_name), "Widget's wake lock was null, not turning off.");
+		}
+	}
 
 	@Override
 	public IBinder onBind(Intent intent) {
 		return null;
+	}
+
+	@Override
+	public boolean onUnbind(Intent intent) {
+		// TODO Auto-generated method stub
+		return super.onUnbind(intent);
 	}
 
 }
